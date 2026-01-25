@@ -41,9 +41,9 @@ import nl.digitalekabeltelevisie.util.ServiceIdentification;
 
 public class ElectronicProgramGuide {
 
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss +0000");
     private static final DocumentBuilder DOC_BUILDER;
     private static final Transformer XML_TRANSFORMER;
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss +0000");
 
     static {
         try {
@@ -54,6 +54,50 @@ public class ElectronicProgramGuide {
         } catch (ParserConfigurationException | TransformerConfigurationException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public static String generateXmlTV(Map<String, List<FriendlyEvent>> epg) throws TransformerException {
+        Document document = DOC_BUILDER.newDocument();
+        Element tv = document.createElement("tv");
+        tv.setAttribute("date", DATE_FORMAT.format(new Date(System.currentTimeMillis())));
+
+        createChannelElements(document, epg.keySet()).forEach(chan -> tv.appendChild(chan));
+        createProgrammeElements(document, epg).forEach(prog -> tv.appendChild(prog));
+
+        document.appendChild(tv);
+        StringWriter writer = new StringWriter();
+        writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        writer.write("<!DOCTYPE tv SYSTEM \"xmltv.dtd\">\n\n");
+        XML_TRANSFORMER.transform(new DOMSource(document), new StreamResult(writer));
+        writer.flush();
+        return writer.toString();
+    }
+
+    public static Map<String, List<FriendlyEvent>> readEPG(File tsFile)
+            throws NotAnMPEGFileException, IOException, ParseException {
+        TransportStream stream = new TransportStream(tsFile);
+        stream.parseStream(null);
+        PSI psi = stream.getPsi();
+        SDT sdt = psi.getSdt();
+        EIT eit = psi.getEit();
+
+        Map<ServiceIdentification, EITsection[]> schedule = eit.getCombinedSchedule();
+        Map<String, List<FriendlyEvent>> events = new LinkedHashMap<>();
+        for (Entry<ServiceIdentification, EITsection[]> scheduleEntry : schedule.entrySet()) {
+            ServiceIdentification service = scheduleEntry.getKey();
+            String serviceName = sdt.getServiceName(service.originalNetworkId(), service.transportStreamId(),
+                    service.serviceId());
+
+            for (EITsection section : scheduleEntry.getValue()) {
+                if (section == null) continue;
+                for (Event event : section.getEventList()) {
+                    FriendlyEvent fe = FriendlyEvent.fromEvent(event);
+                    events.computeIfAbsent(serviceName, t -> new ArrayList<>()).add(fe);
+                }
+            }
+        }
+
+        return Collections.unmodifiableMap(events);
     }
 
     private static List<Element> createChannelElements(Document doc, Set<String> services) {
@@ -124,49 +168,5 @@ public class ElectronicProgramGuide {
             }
         }
         return Collections.unmodifiableList(programmes);
-    }
-
-    public static String generateXmlTV(Map<String, List<FriendlyEvent>> epg) throws TransformerException {
-        Document document = DOC_BUILDER.newDocument();
-        Element tv = document.createElement("tv");
-        tv.setAttribute("date", DATE_FORMAT.format(new Date(System.currentTimeMillis())));
-
-        createChannelElements(document, epg.keySet()).forEach(chan -> tv.appendChild(chan));
-        createProgrammeElements(document, epg).forEach(prog -> tv.appendChild(prog));
-
-        document.appendChild(tv);
-        StringWriter writer = new StringWriter();
-        writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        writer.write("<!DOCTYPE tv SYSTEM \"xmltv.dtd\">\n\n");
-        XML_TRANSFORMER.transform(new DOMSource(document), new StreamResult(writer));
-        writer.flush();
-        return writer.toString();
-    }
-
-    public static Map<String, List<FriendlyEvent>> readEPG(File tsFile)
-            throws NotAnMPEGFileException, IOException, ParseException {
-        TransportStream stream = new TransportStream(tsFile);
-        stream.parseStream(null);
-        PSI psi = stream.getPsi();
-        SDT sdt = psi.getSdt();
-        EIT eit = psi.getEit();
-
-        Map<ServiceIdentification, EITsection[]> schedule = eit.getCombinedSchedule();
-        Map<String, List<FriendlyEvent>> events = new LinkedHashMap<>();
-        for (Entry<ServiceIdentification, EITsection[]> scheduleEntry : schedule.entrySet()) {
-            ServiceIdentification service = scheduleEntry.getKey();
-            String serviceName = sdt.getServiceName(service.originalNetworkId(), service.transportStreamId(),
-                    service.serviceId());
-
-            for (EITsection section : scheduleEntry.getValue()) {
-                if (section == null) continue;
-                for (Event event : section.getEventList()) {
-                    FriendlyEvent fe = FriendlyEvent.fromEvent(event);
-                    events.computeIfAbsent(serviceName, t -> new ArrayList<>()).add(fe);
-                }
-            }
-        }
-
-        return Collections.unmodifiableMap(events);
     }
 }
