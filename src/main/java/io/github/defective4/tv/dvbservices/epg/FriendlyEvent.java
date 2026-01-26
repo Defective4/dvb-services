@@ -85,7 +85,7 @@ public class FriendlyEvent {
                     Collections.addAll(keywords, part2.split("/"));
                     Collections.addAll(genres, part1.replace(":", "").split("/"));
                 }));
-        
+
         String description = String.join("", dvbStrings.stream().map(DVBString::toString).toArray(String[]::new));
         List<Integer> ageRatings = new ArrayList<>();
 
