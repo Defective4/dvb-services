@@ -20,7 +20,8 @@ import io.github.defective4.tv.dvbservices.TemporaryDirs;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.ts.M3UPlaylist;
-import io.github.defective4.tv.dvbservices.ts.external.TSDuck;
+import io.github.defective4.tv.dvbservices.ts.external.TestTSProvider;
+import io.github.defective4.tv.dvbservices.ts.external.TransportStreamProvider;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
@@ -69,7 +70,7 @@ public class MetadataController {
         File dir = TemporaryDirs.getTemporaryDir();
         Map<Integer, File> files = new LinkedHashMap<>();
         for (float freq : frequencies) {
-            try (TSDuck ts = new TSDuck()) {
+            try (TransportStreamProvider ts = new TestTSProvider()) {
                 int f = (int) freq;
                 File file = new File(dir, f + ".ts");
                 files.put(f, file);
