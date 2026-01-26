@@ -56,6 +56,8 @@ public class ElectronicProgramGuide {
         }
     }
 
+    private ElectronicProgramGuide() {}
+
     public static String generateXmlTV(Map<String, List<FriendlyEvent>> epg) throws TransformerException {
         Document document = DOC_BUILDER.newDocument();
         Element tv = document.createElement("tv");

@@ -6,12 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 public class TSDuck implements AutoCloseable {
 
+    private static final String TSP_EXECUTABLE = "tsp";
     private Process process;
-    private final String tspExecutable;
-
-    public TSDuck(String tspExecutable) {
-        this.tspExecutable = tspExecutable;
-    }
 
     @Override
     public void close() {
@@ -21,8 +17,10 @@ public class TSDuck implements AutoCloseable {
     }
 
     public void dumpPSI(int frequency, File output, long timeout) throws IOException {
-        String[] args = { tspExecutable, "-I", "dvb", "--delivery-system", "dvb-t2", "--frequency",
-                Integer.toString(frequency), "-P", "filter", "--psi-si", "-O", "file", output.getPath() };
+//        String[] args = { TSP_EXECUTABLE, "-I", "dvb", "--delivery-system", "dvb-t2", "--frequency",
+//                Integer.toString(frequency), "-P", "filter", "--psi-si", "-O", "file", output.getPath() };
+        String[] args = { TSP_EXECUTABLE, "-I", "file", "/tmp/tv.ts", "-P", "filter", "--psi-si", "-O", "file",
+                output.getPath() };
         process = new ProcessBuilder(args).start();
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);

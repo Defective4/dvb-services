@@ -2,14 +2,17 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 
-import io.github.defective4.tv.dvbservices.http.controller.EPGController;
+import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
 import io.javalin.Javalin;
 
 public class DVBServer {
-    private final EPGController epgController = new EPGController();
+    private final MetadataController epgController;
     private final Javalin javalin;
 
     public DVBServer() {
+        epgController = new MetadataController(new float[] {
+                538e6f
+        });
         javalin = Javalin.create(cfg -> {
             cfg.router.apiBuilder(() -> {
                 //
