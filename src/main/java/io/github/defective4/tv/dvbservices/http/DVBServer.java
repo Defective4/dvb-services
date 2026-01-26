@@ -10,12 +10,10 @@ public class DVBServer {
     private final Javalin javalin;
 
     public DVBServer() {
-        epgController = new MetadataController(new float[] {
-                538e6f
-        });
+        epgController = new MetadataController(new float[] { 538e6f }, "http://127.0.0.1");
         javalin = Javalin.create(cfg -> {
             cfg.router.apiBuilder(() -> {
-                //
+                get("/tv.m3u", epgController::serveM3U);
                 get("/epg.xml", epgController::serveXMLTV);
             });
         });

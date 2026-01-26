@@ -17,10 +17,10 @@ public class TSDuck implements AutoCloseable {
     }
 
     public void dumpPSI(int frequency, File output, long timeout) throws IOException {
-//        String[] args = { TSP_EXECUTABLE, "-I", "dvb", "--delivery-system", "dvb-t2", "--frequency",
-//                Integer.toString(frequency), "-P", "filter", "--psi-si", "-O", "file", output.getPath() };
-        String[] args = { TSP_EXECUTABLE, "-I", "file", "/tmp/tv.ts", "-P", "filter", "--psi-si", "-O", "file",
-                output.getPath() };
+        String[] args = { TSP_EXECUTABLE, "-I", "dvb", "--delivery-system", "dvb-t2", "--frequency",
+                Integer.toString(frequency), "-P", "filter", "--psi-si", "-O", "file", output.getPath() };
+//        String[] args = { TSP_EXECUTABLE, "-I", "file", "/tmp/tv.ts", "-P", "filter", "--psi-si", "-O", "file",
+//                output.getPath() };
         process = new ProcessBuilder(args).start();
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);
