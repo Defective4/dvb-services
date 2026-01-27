@@ -1,4 +1,4 @@
-package io.github.defective4.tv.dvbservices.ts.external;
+package io.github.defective4.tv.dvbservices.ts;
 
 import java.io.File;
 import java.io.IOException;

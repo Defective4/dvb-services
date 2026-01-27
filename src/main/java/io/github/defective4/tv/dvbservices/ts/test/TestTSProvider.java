@@ -1,8 +1,10 @@
-package io.github.defective4.tv.dvbservices.ts.external;
+package io.github.defective4.tv.dvbservices.ts.test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 
 public class TestTSProvider implements TransportStreamProvider {
     private static final String TSP_EXECUTABLE = "tsp";
@@ -16,10 +18,6 @@ public class TestTSProvider implements TransportStreamProvider {
         }
     }
 
-    private void checkUsed() {
-        if (process != null) throw new IllegalStateException("This stream provider was already used");
-    }
-
     @Override
     public void dumpPSI(int frequency, File output, long timeout) throws IOException {
         checkUsed();
@@ -29,6 +27,10 @@ public class TestTSProvider implements TransportStreamProvider {
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {}
+    }
+
+    private void checkUsed() {
+        if (process != null) throw new IllegalStateException("This stream provider was already used");
     }
 
 }
