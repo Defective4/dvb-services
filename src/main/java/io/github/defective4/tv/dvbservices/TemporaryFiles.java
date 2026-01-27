@@ -13,6 +13,12 @@ public class TemporaryFiles {
         return dir;
     }
 
+    public static File getTemporaryFile(String suffix) throws IOException {
+        File file = Files.createTempFile("dvbsvc", "." + suffix).toFile();
+        file.deleteOnExit();
+        return file;
+    }
+
     private static void remove(File dir) {
         if (dir.isDirectory()) {
             for (File f : dir.listFiles()) remove(f);

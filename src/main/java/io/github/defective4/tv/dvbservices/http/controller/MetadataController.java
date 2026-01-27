@@ -7,6 +7,7 @@ import java.io.Writer;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.xml.transform.TransformerException;
 
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
 import io.github.defective4.tv.dvbservices.TemporaryFiles;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -25,6 +29,7 @@ import io.github.defective4.tv.dvbservices.ts.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.ts.test.TestTSProvider;
+import io.github.defective4.tv.dvbservices.util.DOMUtils;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
@@ -39,6 +44,8 @@ public class MetadataController {
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
     private final float[] frequencies;
     private Playlist m3uPlaylist, xspfPlaylist;
+    private final Map<Integer, Document> patTables = new HashMap<>();
+    private final Map<Integer, Document> sdtTables = new HashMap<>();
     private final Timer timer = new Timer(true);
 
     public MetadataController(float[] frequencies, String baseURL) {
@@ -51,7 +58,7 @@ public class MetadataController {
             public void run() {
                 try {
                     captureEPG();
-                } catch (IOException | NotAnMPEGFileException | ParseException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -78,7 +85,7 @@ public class MetadataController {
         }
     }
 
-    private void captureEPG() throws IOException, NotAnMPEGFileException, ParseException {
+    private void captureEPG() throws IOException {
         synchronized (epg) {
             epg.clear();
         }
@@ -89,7 +96,22 @@ public class MetadataController {
                 int f = (int) freq;
                 File file = new File(dir, f + ".ts");
                 files.put(f, file);
-                ts.dumpPSI(f, file, TimeUnit.SECONDS.toMillis(30));
+
+                File patFile = TemporaryFiles.getTemporaryFile("xml");
+                File sdtFile = TemporaryFiles.getTemporaryFile("xml");
+
+                ts.dumpPSI(f, file, patFile, sdtFile, TimeUnit.SECONDS.toMillis(30));
+
+                Document pat = DOMUtils.DOC_BUILDER.parse(patFile);
+                Document sdt = DOMUtils.DOC_BUILDER.parse(sdtFile);
+
+                patFile.delete();
+                sdtFile.delete();
+
+                patTables.put(f, pat);
+                sdtTables.put(f, sdt);
+            } catch (IOException | SAXException e) {
+                e.printStackTrace();
             }
         }
 
@@ -97,9 +119,14 @@ public class MetadataController {
 
         synchronized (epg) {
             for (Entry<Integer, File> entry : files.entrySet()) {
-                Map<String, List<FriendlyEvent>> result = ElectronicProgramGuide.readEPG(entry.getValue());
-                serviceMap.computeIfAbsent(entry.getKey(), t -> new ArrayList<>()).addAll(result.keySet());
-                epg.putAll(result);
+                try {
+                    Map<String, List<FriendlyEvent>> result;
+                    result = ElectronicProgramGuide.readEPG(entry.getValue());
+                    serviceMap.computeIfAbsent(entry.getKey(), t -> new ArrayList<>()).addAll(result.keySet());
+                    epg.putAll(result);
+                } catch (NotAnMPEGFileException | IOException | ParseException e) {
+                    e.printStackTrace();
+                }
             }
         }
 

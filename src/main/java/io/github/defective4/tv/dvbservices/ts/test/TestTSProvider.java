@@ -19,10 +19,11 @@ public class TestTSProvider implements TransportStreamProvider {
     }
 
     @Override
-    public void dumpPSI(int frequency, File output, long timeout) throws IOException {
+    public void dumpPSI(int frequency, File output, File patOutput, File sdtOutput, long timeout) throws IOException {
         checkUsed();
-        String[] args = { TSP_EXECUTABLE, "-I", "file", "/tmp/tv.ts", "-P", "filter", "--psi-si", "-O", "file",
-                output.getPath() };
+        String[] args = { TSP_EXECUTABLE, "-I", "file", "/tmp/tv.ts", "-P", "filter", "--psi-si", "-P", "tables", "-p",
+                "0", "--xml-output", patOutput.getPath(), "-P", "tables", "-p", "17", "--xml-output",
+                sdtOutput.getPath(), "-O", "file", output.getPath() };
         process = new ProcessBuilder(args).start();
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);
