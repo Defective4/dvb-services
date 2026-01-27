@@ -5,11 +5,15 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
+import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 
-public class TestTSProvider implements TransportStreamProvider {
+public class TestTSProvider extends TransportStreamProvider {
+
     private static final String TSP_EXECUTABLE = "tsp";
 
     private Process process;
+
+    private TestTSProvider() {}
 
     @Override
     public void close() {
@@ -32,6 +36,16 @@ public class TestTSProvider implements TransportStreamProvider {
 
     private void checkUsed() {
         if (process != null) throw new IllegalStateException("This stream provider was already used");
+    }
+
+    public static TransportStreamProviderFactory<TestTSProvider> factory() {
+        return new TransportStreamProviderFactory<>() {
+
+            @Override
+            public TestTSProvider create() {
+                return new TestTSProvider();
+            }
+        };
     }
 
 }

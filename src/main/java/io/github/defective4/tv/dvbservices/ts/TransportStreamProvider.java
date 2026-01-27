@@ -3,9 +3,11 @@ package io.github.defective4.tv.dvbservices.ts;
 import java.io.File;
 import java.io.IOException;
 
-public interface TransportStreamProvider extends AutoCloseable {
-    @Override
-    void close() throws IOException;
+public abstract class TransportStreamProvider implements AutoCloseable {
+    protected TransportStreamProvider() {}
 
-    void dumpPSI(int frequency, File target, File patOutput, File sdtOutput, long timeout) throws IOException;
+    @Override
+    public abstract void close() throws IOException;
+
+    public abstract void dumpPSI(int frequency, File target, File patOutput, File sdtOutput, long timeout) throws IOException;
 }

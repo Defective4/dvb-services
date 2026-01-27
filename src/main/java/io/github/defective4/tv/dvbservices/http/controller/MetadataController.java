@@ -24,11 +24,11 @@ import org.xml.sax.SAXException;
 import io.github.defective4.tv.dvbservices.TemporaryFiles;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
+import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.ts.M3UPlaylist;
 import io.github.defective4.tv.dvbservices.ts.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.XSPFPlaylist;
-import io.github.defective4.tv.dvbservices.ts.test.TestTSProvider;
 import io.github.defective4.tv.dvbservices.util.DOMUtils;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
@@ -46,13 +46,15 @@ public class MetadataController {
     private Playlist m3uPlaylist, xspfPlaylist;
     private final Map<Integer, Document> patTables = new HashMap<>();
     private final Map<Integer, Document> sdtTables = new HashMap<>();
+    private final DVBServer server;
     private final Timer timer = new Timer(true);
 
-    public MetadataController(float[] frequencies, String baseURL) {
+    public MetadataController(float[] frequencies, String baseURL, DVBServer server) {
         this.frequencies = frequencies;
         this.baseURL = baseURL;
         m3uPlaylist = new M3UPlaylist(Map.of(), baseURL);
         xspfPlaylist = new XSPFPlaylist(Map.of(), baseURL, XSPF_PLAYLIST_TITLE);
+        this.server = server;
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -92,7 +94,7 @@ public class MetadataController {
         File dir = TemporaryFiles.getTemporaryDir();
         Map<Integer, File> files = new LinkedHashMap<>();
         for (float freq : frequencies) {
-            try (TransportStreamProvider ts = new TestTSProvider()) {
+            try (TransportStreamProvider ts = server.getTspProvider().create()) {
                 int f = (int) freq;
                 File file = new File(dir, f + ".ts");
                 files.put(f, file);
