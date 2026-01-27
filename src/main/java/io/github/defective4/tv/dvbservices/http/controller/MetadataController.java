@@ -15,13 +15,10 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
-
-import io.github.defective4.tv.dvbservices.TemporaryFiles;
+import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
@@ -30,6 +27,7 @@ import io.github.defective4.tv.dvbservices.ts.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.util.DOMUtils;
+import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
@@ -40,29 +38,25 @@ public class MetadataController {
     private static final String XSPF_MIME = "application/xspf+xml";
     private static final String XSPF_PLAYLIST_TITLE = "TV Playlist";
 
+    private final List<AdapterInfo> adapters;
     private final String baseURL;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
-    private final float[] frequencies;
     private Playlist m3uPlaylist, xspfPlaylist;
     private final Map<Integer, Document> patTables = new HashMap<>();
     private final Map<Integer, Document> sdtTables = new HashMap<>();
     private final DVBServer server;
     private final Timer timer = new Timer(true);
 
-    public MetadataController(float[] frequencies, String baseURL, DVBServer server) {
-        this.frequencies = frequencies;
+    public MetadataController(List<AdapterInfo> adapters, String baseURL, DVBServer server) {
         this.baseURL = baseURL;
         m3uPlaylist = new M3UPlaylist(Map.of(), baseURL);
         xspfPlaylist = new XSPFPlaylist(Map.of(), baseURL, XSPF_PLAYLIST_TITLE);
+        this.adapters = adapters;
         this.server = server;
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    captureEPG();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                captureEPG();
             }
         }, 0, TimeUnit.DAYS.toMillis(1));
     }
@@ -87,22 +81,21 @@ public class MetadataController {
         }
     }
 
-    private void captureEPG() throws IOException {
+    private void captureEPG() {
         synchronized (epg) {
             epg.clear();
         }
-        File dir = TemporaryFiles.getTemporaryDir();
         Map<Integer, File> files = new LinkedHashMap<>();
-        for (float freq : frequencies) {
+        for (AdapterInfo adapter : adapters) {
             try (TransportStreamProvider ts = server.getTspProvider().create()) {
-                int f = (int) freq;
-                File file = new File(dir, f + ".ts");
+                File file = TemporaryFiles.getTemporaryFile(".ts");
+                int f = adapter.freq();
                 files.put(f, file);
 
                 File patFile = TemporaryFiles.getTemporaryFile("xml");
                 File sdtFile = TemporaryFiles.getTemporaryFile("xml");
 
-                ts.dumpPSI(f, file, patFile, sdtFile, TimeUnit.SECONDS.toMillis(30));
+                ts.dumpPSI(adapter, file, patFile, sdtFile, TimeUnit.SECONDS.toMillis(30));
 
                 Document pat = DOMUtils.DOC_BUILDER.parse(patFile);
                 Document sdt = DOMUtils.DOC_BUILDER.parse(sdtFile);
@@ -124,6 +117,7 @@ public class MetadataController {
                 try {
                     Map<String, List<FriendlyEvent>> result;
                     result = ElectronicProgramGuide.readEPG(entry.getValue());
+                    entry.getValue().delete();
                     serviceMap.computeIfAbsent(entry.getKey(), t -> new ArrayList<>()).addAll(result.keySet());
                     epg.putAll(result);
                 } catch (NotAnMPEGFileException | IOException | ParseException e) {
