@@ -15,9 +15,12 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
+
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -41,9 +44,10 @@ public class MetadataController {
     private final List<AdapterInfo> adapters;
     private final String baseURL;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
+    private final Map<String, Integer> frequencyTable = new HashMap<>();
     private Playlist m3uPlaylist, xspfPlaylist;
-    private final Map<Integer, Document> patTables = new HashMap<>();
-    private final Map<Integer, Document> sdtTables = new HashMap<>();
+    private final Map<Integer, Document> patTable = new HashMap<>();
+    private final Map<Integer, Document> sdtTable = new HashMap<>();
     private final DVBServer server;
     private final Timer timer = new Timer(true);
 
@@ -82,9 +86,11 @@ public class MetadataController {
     }
 
     private void captureEPG() {
-        synchronized (epg) {
-            epg.clear();
-        }
+        patTable.clear();
+        sdtTable.clear();
+        frequencyTable.clear();
+        epg.clear();
+
         Map<Integer, File> files = new LinkedHashMap<>();
         for (AdapterInfo adapter : adapters) {
             try (TransportStreamProvider ts = server.getTspProvider().create()) {
@@ -103,8 +109,8 @@ public class MetadataController {
                 patFile.delete();
                 sdtFile.delete();
 
-                patTables.put(f, pat);
-                sdtTables.put(f, sdt);
+                patTable.put(f, pat);
+                sdtTable.put(f, sdt);
             } catch (IOException | SAXException e) {
                 e.printStackTrace();
             }
@@ -112,21 +118,22 @@ public class MetadataController {
 
         Map<Integer, Collection<String>> serviceMap = new LinkedHashMap<>();
 
-        synchronized (epg) {
-            for (Entry<Integer, File> entry : files.entrySet()) {
-                try {
-                    Map<String, List<FriendlyEvent>> result;
-                    result = ElectronicProgramGuide.readEPG(entry.getValue());
-                    entry.getValue().delete();
-                    serviceMap.computeIfAbsent(entry.getKey(), t -> new ArrayList<>()).addAll(result.keySet());
-                    epg.putAll(result);
-                } catch (NotAnMPEGFileException | IOException | ParseException e) {
-                    e.printStackTrace();
-                }
+        for (Entry<Integer, File> entry : files.entrySet()) {
+            try {
+                Map<String, List<FriendlyEvent>> result;
+                result = ElectronicProgramGuide.readEPG(entry.getValue());
+                for (String svc : result.keySet()) frequencyTable.put(svc, entry.getKey());
+                entry.getValue().delete();
+                serviceMap.computeIfAbsent(entry.getKey(), t -> new ArrayList<>()).addAll(result.keySet());
+                epg.putAll(result);
+            } catch (NotAnMPEGFileException | IOException | ParseException e) {
+                e.printStackTrace();
             }
         }
 
         m3uPlaylist = new M3UPlaylist(serviceMap, baseURL);
         xspfPlaylist = new XSPFPlaylist(serviceMap, baseURL, XSPF_PLAYLIST_TITLE);
+        
+        System.out.println(frequencyTable);
     }
 }
