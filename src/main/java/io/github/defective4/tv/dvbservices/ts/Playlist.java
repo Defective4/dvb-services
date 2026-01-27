@@ -1,5 +1,6 @@
 package io.github.defective4.tv.dvbservices.ts;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Map;
@@ -21,5 +22,5 @@ public abstract class Playlist {
         return services;
     }
 
-    public abstract void save(Writer writer);
+    public abstract void save(Writer writer) throws IOException;
 }

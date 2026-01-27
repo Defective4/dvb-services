@@ -1,5 +1,8 @@
 package io.github.defective4.tv.dvbservices.epg;
 
+import static io.github.defective4.tv.dvbservices.util.DOMUtils.DOC_BUILDER;
+import static io.github.defective4.tv.dvbservices.util.DOMUtils.XMLTV_TRANSFORMER;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -16,14 +19,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -42,19 +38,6 @@ import nl.digitalekabeltelevisie.util.ServiceIdentification;
 public class ElectronicProgramGuide {
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss +0000");
-    private static final DocumentBuilder DOC_BUILDER;
-    private static final Transformer XML_TRANSFORMER;
-
-    static {
-        try {
-            DOC_BUILDER = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder();
-            XML_TRANSFORMER = TransformerFactory.newDefaultInstance().newTransformer();
-            XML_TRANSFORMER.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-            XML_TRANSFORMER.setOutputProperty(OutputKeys.INDENT, "yes");
-        } catch (ParserConfigurationException | TransformerConfigurationException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 
     private ElectronicProgramGuide() {}
 
@@ -70,7 +53,7 @@ public class ElectronicProgramGuide {
         StringWriter writer = new StringWriter();
         writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         writer.write("<!DOCTYPE tv SYSTEM \"xmltv.dtd\">\n\n");
-        XML_TRANSFORMER.transform(new DOMSource(document), new StreamResult(writer));
+        XMLTV_TRANSFORMER.transform(new DOMSource(document), new StreamResult(writer));
         writer.flush();
         return writer.toString();
     }

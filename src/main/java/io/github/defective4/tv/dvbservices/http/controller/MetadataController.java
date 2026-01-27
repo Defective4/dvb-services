@@ -2,7 +2,8 @@ package io.github.defective4.tv.dvbservices.http.controller;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,11 +17,13 @@ import java.util.concurrent.TimeUnit;
 
 import javax.xml.transform.TransformerException;
 
-import io.github.defective4.tv.dvbservices.TemporaryDirs;
+import io.github.defective4.tv.dvbservices.TemporaryFiles;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.ts.M3UPlaylist;
+import io.github.defective4.tv.dvbservices.ts.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
+import io.github.defective4.tv.dvbservices.ts.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.ts.test.TestTSProvider;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
@@ -28,16 +31,21 @@ import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
 
 public class MetadataController {
 
+    private static final String M3U_MIME = "audio/x-mpegurl";
+    private static final String XSPF_MIME = "application/xspf+xml";
+    private static final String XSPF_PLAYLIST_TITLE = "TV Playlist";
+
     private final String baseURL;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
     private final float[] frequencies;
-    private M3UPlaylist m3uPlaylist;
+    private Playlist m3uPlaylist, xspfPlaylist;
     private final Timer timer = new Timer(true);
 
     public MetadataController(float[] frequencies, String baseURL) {
         this.frequencies = frequencies;
         this.baseURL = baseURL;
         m3uPlaylist = new M3UPlaylist(Map.of(), baseURL);
+        xspfPlaylist = new XSPFPlaylist(Map.of(), baseURL, XSPF_PLAYLIST_TITLE);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -50,11 +58,11 @@ public class MetadataController {
         }, 0, TimeUnit.DAYS.toMillis(1));
     }
 
-    public void serveM3U(Context ctx) {
-        StringWriter writer = new StringWriter();
-        m3uPlaylist.save(writer);
-        ctx.contentType("audio/x-mpegurl");
-        ctx.result(writer.toString());
+    public void serveM3U(Context ctx) throws IOException {
+        ctx.contentType(M3U_MIME);
+        try (Writer writer = new OutputStreamWriter(ctx.outputStream())) {
+            m3uPlaylist.save(writer);
+        }
     }
 
     public void serveXMLTV(Context ctx) throws TransformerException {
@@ -63,11 +71,18 @@ public class MetadataController {
         ctx.result(xmltv);
     }
 
+    public void serveXSPF(Context ctx) throws IOException {
+        ctx.contentType(XSPF_MIME);
+        try (Writer writer = new OutputStreamWriter(ctx.outputStream())) {
+            xspfPlaylist.save(writer);
+        }
+    }
+
     private void captureEPG() throws IOException, NotAnMPEGFileException, ParseException {
         synchronized (epg) {
             epg.clear();
         }
-        File dir = TemporaryDirs.getTemporaryDir();
+        File dir = TemporaryFiles.getTemporaryDir();
         Map<Integer, File> files = new LinkedHashMap<>();
         for (float freq : frequencies) {
             try (TransportStreamProvider ts = new TestTSProvider()) {
@@ -89,5 +104,6 @@ public class MetadataController {
         }
 
         m3uPlaylist = new M3UPlaylist(serviceMap, baseURL);
+        xspfPlaylist = new XSPFPlaylist(serviceMap, baseURL, XSPF_PLAYLIST_TITLE);
     }
 }

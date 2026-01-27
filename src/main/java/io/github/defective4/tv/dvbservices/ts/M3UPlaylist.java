@@ -22,7 +22,7 @@ public class M3UPlaylist extends Playlist {
             int freq = entry.getKey();
             for (String service : entry.getValue()) {
                 pw.println("#EXTINF:0," + service);
-                pw.println(String.format("%s/%s/%s", getBaseURL(), freq,
+                pw.println(String.format("%s/ts/%s/%s", getBaseURL(), freq,
                         URLEncoder.encode(service, StandardCharsets.UTF_8) + ".ts"));
             }
         }

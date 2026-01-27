@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class TemporaryDirs {
-    private TemporaryDirs() {}
+public class TemporaryFiles {
+    private TemporaryFiles() {}
 
     public static File getTemporaryDir() throws IOException {
         File dir = Files.createTempDirectory("dvbsvc").toFile();

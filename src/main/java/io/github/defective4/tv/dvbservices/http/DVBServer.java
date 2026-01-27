@@ -15,6 +15,7 @@ public class DVBServer {
             cfg.router.apiBuilder(() -> {
                 get("/tv.m3u", epgController::serveM3U);
                 get("/epg.xml", epgController::serveXMLTV);
+                get("/tv.xspf", epgController::serveXSPF);
             });
         });
     }
