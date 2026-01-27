@@ -1,4 +1,4 @@
-package io.github.defective4.tv.dvbservices.ts;
+package io.github.defective4.tv.dvbservices.ts.playlist;
 
 import java.io.IOException;
 import java.io.Writer;

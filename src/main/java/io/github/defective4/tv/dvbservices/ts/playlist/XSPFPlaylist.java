@@ -1,4 +1,4 @@
-package io.github.defective4.tv.dvbservices.ts;
+package io.github.defective4.tv.dvbservices.ts.playlist;
 
 import static io.github.defective4.tv.dvbservices.util.DOMUtils.createAndAppendElement;
 import java.io.IOException;
