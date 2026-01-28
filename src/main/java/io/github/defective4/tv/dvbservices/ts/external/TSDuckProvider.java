@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
@@ -57,7 +56,6 @@ public class TSDuckProvider extends TransportStreamProvider {
         process = ProcessUtils.start(arguments.toArray(new String[0]));
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);
-            Thread.sleep(10000);
         } catch (InterruptedException e) {}
     }
 

@@ -3,9 +3,7 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 
-import java.util.List;
-
-import io.github.defective4.tv.dvbservices.AdapterInfo;
+import io.github.defective4.tv.dvbservices.ServerSettings;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
 import io.github.defective4.tv.dvbservices.http.controller.VideoController;
@@ -19,12 +17,14 @@ public class DVBServer {
     private final ExceptionController exceptionController = new ExceptionController();
     private final Javalin javalin;
     private final MetadataController metadataController;
+    private final ServerSettings settings;
     private final TransportStreamProviderFactory<?> tspProviderFactory;
     private final VideoController videoController;
 
-    public DVBServer(List<AdapterInfo> adapters) {
+    public DVBServer(ServerSettings settings) {
+        this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory("tsp");
-        metadataController = new MetadataController(adapters, "http://127.0.0.1", this);
+        metadataController = new MetadataController(settings.getAdapters(), "http://127.0.0.1", this);
         videoController = new VideoController(this);
         javalin = Javalin.create(cfg -> {
             cfg.router.apiBuilder(() -> {
@@ -47,6 +47,10 @@ public class DVBServer {
 
     public MetadataController getMetadataController() {
         return metadataController;
+    }
+
+    public ServerSettings getSettings() {
+        return settings;
     }
 
     public TransportStreamProviderFactory<?> getTspProviderFactory() {
