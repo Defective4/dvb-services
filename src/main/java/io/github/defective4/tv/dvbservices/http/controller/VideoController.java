@@ -27,6 +27,7 @@ public class VideoController {
     }
 
     public void serveVideo(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
+        checkDumping();
         Entry<String, String> serviceEntry = getService(ctx);
         String service = serviceEntry.getKey();
         AdapterInfo adapter = server.getMetadataController().getServiceAdapter(service)
@@ -37,6 +38,7 @@ public class VideoController {
     }
 
     public void serveVideoExact(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
+        checkDumping();
         Entry<String, String> entry = getService(ctx);
         String service = entry.getKey();
         String type = entry.getValue();
@@ -46,6 +48,15 @@ public class VideoController {
                 .orElseThrow(() -> new AdapterUnavailableException("There is no adapter for this frequency"));
 
         serveService(ctx, service, adapter, type);
+    }
+
+    private void checkDumping() throws AdapterUnavailableException {
+        MetadataController mtd = server.getMetadataController();
+        if (mtd.isDumping()) {
+            throw new AdapterUnavailableException(
+                    String.format("The server is currently capturing TV metadata. Current progress: %s/%s",
+                            mtd.getDumpingProgress(), mtd.getAdapters().size()));
+        }
     }
 
     private void serveService(Context ctx, String service, AdapterInfo adapter, String type)

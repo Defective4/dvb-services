@@ -41,9 +41,7 @@ public class FFMpeg implements AutoCloseable {
                     if (read < 0) break;
                     to.write(buffer, 0, read);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            } catch (IOException e) {}
             return true;
         });
 
@@ -55,9 +53,7 @@ public class FFMpeg implements AutoCloseable {
                 if (read < 0) break;
                 fo.write(buffer, 0, read);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) {}
 
         task.get();
     }
