@@ -25,11 +25,8 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import com.google.gson.Gson;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -39,6 +36,7 @@ import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.Playlist;
 import io.github.defective4.tv.dvbservices.ts.playlist.XSPFPlaylist;
+import io.github.defective4.tv.dvbservices.util.HashUtil;
 import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
@@ -174,13 +172,17 @@ public class MetadataController {
             metaFile = new File(dataFile.getPath() + ".meta");
 
             long timestamp = 0;
-            if (metaFile.isFile()) try (DataInputStream in = new DataInputStream(new FileInputStream(metaFile))) {
-                timestamp = in.readLong();
+            byte[] binHash = new byte[16];
+            if (metaFile.isFile()) {
+                try (DataInputStream in = new DataInputStream(new FileInputStream(metaFile))) {
+                    timestamp = in.readLong();
+                    in.readFully(binHash);
+                }
             }
 
             long diff = (System.currentTimeMillis() - timestamp) / 1000;
 
-            if (dataFile.isFile() && diff < cache.getCacheTTL()) {
+            if (dataFile.isFile() && diff < cache.getCacheTTL() && HashUtil.hashEquals(dataFile, binHash)) {
                 try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
                     result = gson.fromJson(reader, Map.class);
                 }
@@ -196,6 +198,7 @@ public class MetadataController {
 
                 try (DataOutputStream output = new DataOutputStream(new FileOutputStream(metaFile))) {
                     output.writeLong(System.currentTimeMillis());
+                    output.write(HashUtil.hash(dataFile));
                 }
             }
         }
