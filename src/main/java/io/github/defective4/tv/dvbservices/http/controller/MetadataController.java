@@ -12,15 +12,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -42,9 +40,9 @@ public class MetadataController {
     private static final String XSPF_PLAYLIST_TITLE = "TV Playlist";
 
     private final List<AdapterInfo> adapters;
+    private final Map<String, AdapterInfo> adapterTable = new HashMap<>();
     private final String baseURL;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
-    private final Map<String, Integer> frequencyTable = new HashMap<>();
     private Playlist m3uPlaylist, xspfPlaylist;
     private final Map<Integer, Document> patTable = new HashMap<>();
     private final Map<Integer, Document> sdtTable = new HashMap<>();
@@ -63,6 +61,10 @@ public class MetadataController {
                 captureEPG();
             }
         }, 0, TimeUnit.DAYS.toMillis(1));
+    }
+
+    public Optional<AdapterInfo> getServiceAdapter(String service) {
+        return Optional.ofNullable(adapterTable.get(service));
     }
 
     public void serveM3U(Context ctx) throws IOException {
@@ -88,15 +90,15 @@ public class MetadataController {
     private void captureEPG() {
         patTable.clear();
         sdtTable.clear();
-        frequencyTable.clear();
+        adapterTable.clear();
         epg.clear();
 
-        Map<Integer, File> files = new LinkedHashMap<>();
+        Map<AdapterInfo, File> files = new LinkedHashMap<>();
         for (AdapterInfo adapter : adapters) {
-            try (TransportStreamProvider ts = server.getTspProvider().create()) {
+            try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
                 File file = TemporaryFiles.getTemporaryFile(".ts");
                 int f = adapter.freq();
-                files.put(f, file);
+                files.put(adapter, file);
 
                 File patFile = TemporaryFiles.getTemporaryFile("xml");
                 File sdtFile = TemporaryFiles.getTemporaryFile("xml");
@@ -118,13 +120,13 @@ public class MetadataController {
 
         Map<Integer, Collection<String>> serviceMap = new LinkedHashMap<>();
 
-        for (Entry<Integer, File> entry : files.entrySet()) {
+        for (Entry<AdapterInfo, File> entry : files.entrySet()) {
             try {
                 Map<String, List<FriendlyEvent>> result;
                 result = ElectronicProgramGuide.readEPG(entry.getValue());
-                for (String svc : result.keySet()) frequencyTable.put(svc, entry.getKey());
+                for (String svc : result.keySet()) adapterTable.put(svc, entry.getKey());
                 entry.getValue().delete();
-                serviceMap.computeIfAbsent(entry.getKey(), t -> new ArrayList<>()).addAll(result.keySet());
+                serviceMap.computeIfAbsent(entry.getKey().freq(), t -> new ArrayList<>()).addAll(result.keySet());
                 epg.putAll(result);
             } catch (NotAnMPEGFileException | IOException | ParseException e) {
                 e.printStackTrace();
@@ -133,7 +135,5 @@ public class MetadataController {
 
         m3uPlaylist = new M3UPlaylist(serviceMap, baseURL);
         xspfPlaylist = new XSPFPlaylist(serviceMap, baseURL, XSPF_PLAYLIST_TITLE);
-        
-        System.out.println(frequencyTable);
     }
 }

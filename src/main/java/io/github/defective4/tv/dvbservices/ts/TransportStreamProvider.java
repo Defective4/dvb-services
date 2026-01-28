@@ -2,7 +2,6 @@ package io.github.defective4.tv.dvbservices.ts;
 
 import java.io.File;
 import java.io.IOException;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 
 public abstract class TransportStreamProvider implements AutoCloseable {
