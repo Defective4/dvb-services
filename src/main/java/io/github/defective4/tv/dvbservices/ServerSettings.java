@@ -11,11 +11,7 @@ public class ServerSettings {
     }
 
     public List<AdapterInfo> getAdapters() {
-        return adapters;
-    }
-
-    public void validate() {
-
+        return adapters == null ? List.of() : adapters;
     }
 
     public static ServerSettings getDefaultSettings() {
