@@ -1,6 +1,7 @@
 package io.github.defective4.tv.dvbservices.ts.playlist;
 
 import static io.github.defective4.tv.dvbservices.util.DOMUtils.createAndAppendElement;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -9,10 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+
 import org.w3c.dom.Document;
+
 import io.github.defective4.tv.dvbservices.util.DOMUtils;
 
 public class XSPFPlaylist extends Playlist {

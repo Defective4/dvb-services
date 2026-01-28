@@ -1,9 +1,17 @@
 package io.github.defective4.tv.dvbservices.http.controller;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,11 +25,16 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
+
+import com.google.gson.Gson;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.Playlist;
@@ -38,10 +51,12 @@ public class MetadataController {
     private static final String XSPF_PLAYLIST_TITLE = "TV Playlist";
 
     private final List<AdapterInfo> adapters;
+
     private final Map<String, AdapterInfo> adapterTable = new HashMap<>();
     private final String baseURL;
     private int dumpingProgress;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
+    private final Gson gson = new Gson();
     private boolean isDumping;
     private Playlist m3uPlaylist, xspfPlaylist;
     private final DVBServer server;
@@ -125,8 +140,8 @@ public class MetadataController {
 
             for (Entry<AdapterInfo, File> entry : files.entrySet()) {
                 try {
-                    Map<String, List<FriendlyEvent>> result;
-                    result = ElectronicProgramGuide.readEPG(entry.getValue());
+                    Map<String, List<FriendlyEvent>> result = getOrCached(entry.getKey(), entry.getValue());
+
                     for (String svc : result.keySet()) adapterTable.put(svc, entry.getKey());
                     entry.getValue().delete();
                     serviceMap.computeIfAbsent(entry.getKey().freq(), t -> new ArrayList<>()).addAll(result.keySet());
@@ -141,5 +156,49 @@ public class MetadataController {
         } finally {
             isDumping = false;
         }
+    }
+
+    private Map<String, List<FriendlyEvent>> getOrCached(AdapterInfo adapter, File file)
+            throws NotAnMPEGFileException, IOException, ParseException {
+        Map<String, List<FriendlyEvent>> result = null;
+        Cache cache = server.getSettings().getCache();
+        File dataFile = null;
+        File metaFile = null;
+
+        if (cache.isEnableMetadataCache()) {
+            File dir = cache.getCacheDirectory();
+            dir.mkdirs();
+
+            String hash = adapter.calculateString();
+            dataFile = new File(dir, hash + ".bin");
+            metaFile = new File(dataFile.getPath() + ".meta");
+
+            long timestamp = 0;
+            if (metaFile.isFile()) try (DataInputStream in = new DataInputStream(new FileInputStream(metaFile))) {
+                timestamp = in.readLong();
+            }
+
+            long diff = (System.currentTimeMillis() - timestamp) / 1000;
+
+            if (dataFile.isFile() && diff < cache.getCacheTTL()) {
+                try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
+                    result = gson.fromJson(reader, Map.class);
+                }
+            }
+        }
+
+        if (result == null) {
+            result = ElectronicProgramGuide.readEPG(file);
+            if (dataFile != null && metaFile != null) {
+                try (Writer writer = new FileWriter(dataFile, StandardCharsets.UTF_8)) {
+                    gson.toJson(result, writer);
+                }
+
+                try (DataOutputStream output = new DataOutputStream(new FileOutputStream(metaFile))) {
+                    output.writeLong(System.currentTimeMillis());
+                }
+            }
+        }
+        return result;
     }
 }

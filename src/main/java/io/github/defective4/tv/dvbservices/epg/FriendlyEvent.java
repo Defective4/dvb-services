@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+
 import nl.digitalekabeltelevisie.controller.DVBString;
 import nl.digitalekabeltelevisie.data.mpeg.descriptors.ContentDescriptor;
 import nl.digitalekabeltelevisie.data.mpeg.descriptors.Descriptor;
@@ -16,7 +17,6 @@ import nl.digitalekabeltelevisie.data.mpeg.psi.EITsection.Event;
 import nl.digitalekabeltelevisie.util.Utils;
 
 public class FriendlyEvent {
-
     private static final DateFormat FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
     private final List<Integer> ageRatings;
     private final String description;
@@ -24,7 +24,7 @@ public class FriendlyEvent {
     private final List<String> keywords;
     private final long minutes;
     private final String name;
-    private final Date start;
+    private final long start;
 
     public FriendlyEvent(String name, String description, List<String> genres, List<String> keywords, long minutes,
             List<Integer> ageRatings, Date start) {
@@ -34,7 +34,7 @@ public class FriendlyEvent {
         this.keywords = Collections.unmodifiableList(keywords);
         this.minutes = minutes;
         this.ageRatings = Collections.unmodifiableList(ageRatings);
-        this.start = start;
+        this.start = start.getTime();
     }
 
     public List<Integer> getAgeRatings() {
@@ -62,7 +62,7 @@ public class FriendlyEvent {
     }
 
     public Date getStart() {
-        return start;
+        return new Date(start);
     }
 
     public static FriendlyEvent fromEvent(Event event) throws ParseException {

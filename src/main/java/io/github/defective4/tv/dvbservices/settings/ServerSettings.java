@@ -1,10 +1,43 @@
 package io.github.defective4.tv.dvbservices.settings;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 
 public class ServerSettings {
+
+    public static class Cache {
+        private String cacheDirectory = "cache";
+        private int cacheTTL = 86400;
+        private boolean enableMetadataCache = true;
+
+        public File getCacheDirectory() {
+            return new File(cacheDirectory);
+        }
+
+        public int getCacheTTL() {
+            return cacheTTL;
+        }
+
+        public boolean isEnableMetadataCache() {
+            return enableMetadataCache;
+        }
+
+        public void setCacheDirectory(File cacheDirectory) {
+            this.cacheDirectory = cacheDirectory.getPath();
+        }
+
+        public void setCacheTTL(int cacheTTL) {
+            this.cacheTTL = cacheTTL;
+        }
+
+        public void setEnableMetadataCache(boolean enableMetadataCache) {
+            this.enableMetadataCache = enableMetadataCache;
+        }
+
+    }
 
     public static class Metadata {
         private boolean serverM3UPlaylist = true;
@@ -99,12 +132,17 @@ public class ServerSettings {
     }
 
     private final List<AdapterInfo> adapters = List.of(new AdapterInfo("file", Map.of(), 538e6f, "/tmp/tv.ts"));
+    private Cache cache = new Cache();
     private Metadata metadata = new Metadata();
     private Server server = new Server();
     private Tools tools = new Tools();
 
     public List<AdapterInfo> getAdapters() {
         return adapters == null ? List.of() : adapters;
+    }
+
+    public Cache getCache() {
+        return cache;
     }
 
     public Metadata getMetadata() {
@@ -117,6 +155,10 @@ public class ServerSettings {
 
     public Tools getTools() {
         return tools;
+    }
+
+    public void setCache(Cache cache) {
+        this.cache = cache;
     }
 
     public void setMetadata(Metadata metadata) {
