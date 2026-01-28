@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
@@ -65,10 +64,16 @@ public class VideoController {
 
         switch (type) {
             case "ts": {
+                if (!server.getSettings().getServer().isServeVideo()) {
+                    throw new ServiceNotFoundException("This server does not serve video files");
+                }
                 video = true;
                 break;
             }
             case "mp3": {
+                if (!server.getSettings().getServer().isServeMP3()) {
+                    throw new ServiceNotFoundException("This server does not serve audio files");
+                }
                 video = false;
                 break;
             }
@@ -86,7 +91,7 @@ public class VideoController {
             this.provider = provider;
 
             if (!video) {
-                try (FFMpeg ffmpeg = new FFMpeg("ffmpeg")) {
+                try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().getTools().getFFmpegPath())) {
                     ffmpeg.convertToMP3(in, out);
                     ffmpeg.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {
