@@ -10,7 +10,7 @@ public abstract class TransportStreamProvider implements AutoCloseable {
 
     protected TransportStreamProvider() {}
 
-    public abstract InputStream captureTS(AdapterInfo adapter, String service) throws IOException;
+    public abstract InputStream captureTS(AdapterInfo adapter, String service, boolean audioOnly) throws IOException;
 
     @Override
     public abstract void close() throws IOException;

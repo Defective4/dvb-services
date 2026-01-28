@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
+import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
 public class TSDuckProvider extends TransportStreamProvider {
 
@@ -25,12 +26,18 @@ public class TSDuckProvider extends TransportStreamProvider {
     }
 
     @Override
-    public InputStream captureTS(AdapterInfo adapter, String service) throws IOException {
+    public InputStream captureTS(AdapterInfo adapter, String service, boolean audioOnly) throws IOException {
         checkUsed();
         List<String> args = constructInitialParams(adapter);
-        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "-p", "18", "--service", service));
+        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "--service", service));
+        if (audioOnly) {
+            args.addAll(List.of("-P", "filter", "--video", "--codec", "Teletext", "-n"));
+        } else {
+            args.add("-p");
+            args.add("18");
+        }
         args.addAll(List.of());
-        process = new ProcessBuilder(args.toArray(new String[0])).start();
+        process = ProcessUtils.start(args.toArray(new String[0]));
         return process.getInputStream();
     }
 
@@ -47,7 +54,7 @@ public class TSDuckProvider extends TransportStreamProvider {
         List<String> arguments = constructInitialParams(adapter);
         arguments
                 .addAll(List.of("-P", "filter", "--psi-si", "-P", "tables", "-p", "0", "-O", "file", output.getPath()));
-        process = new ProcessBuilder(arguments.toArray(new String[0])).start();
+        process = ProcessUtils.start(arguments.toArray(new String[0]));
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {}

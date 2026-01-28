@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -13,6 +14,7 @@ import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.ServiceNotFoundException;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
+import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.javalin.http.Context;
 
 public class VideoController {
@@ -55,6 +57,10 @@ public class VideoController {
                 video = true;
                 break;
             }
+            case "mp3": {
+                video = false;
+                break;
+            }
             default:
                 throw new ServiceNotFoundException("Unknown file extension ." + type);
         }
@@ -64,15 +70,25 @@ public class VideoController {
         }
 
         try (TransportStreamProvider provider = server.getTspProviderFactory().create();
-                InputStream in = provider.captureTS(adapter, service);
+                InputStream in = provider.captureTS(adapter, service, !video);
                 OutputStream out = ctx.outputStream()) {
             this.provider = provider;
 
-            while (true) {
+            if (!video) {
+                try (FFMpeg ffmpeg = new FFMpeg("ffmpeg")) {
+                    ffmpeg.convertToMP3(in, out);
+                    ffmpeg.closePeacefully();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+            } else {
                 byte[] data = new byte[1024];
-                int read = in.read(data);
-                if (read < 0) break;
-                out.write(data, 0, read);
+                int read;
+                while (true) {
+                    read = in.read(data);
+                    if (read < 0) break;
+                    out.write(data, 0, read);
+                }
             }
         } finally {
             provider = null;
