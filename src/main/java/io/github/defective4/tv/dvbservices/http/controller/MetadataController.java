@@ -16,9 +16,9 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -27,7 +27,6 @@ import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.Playlist;
 import io.github.defective4.tv.dvbservices.ts.playlist.XSPFPlaylist;
-import io.github.defective4.tv.dvbservices.util.DOMUtils;
 import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
@@ -44,8 +43,6 @@ public class MetadataController {
     private final String baseURL;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
     private Playlist m3uPlaylist, xspfPlaylist;
-    private final Map<Integer, Document> patTable = new HashMap<>();
-    private final Map<Integer, Document> sdtTable = new HashMap<>();
     private final DVBServer server;
     private final Timer timer = new Timer(true);
 
@@ -88,8 +85,6 @@ public class MetadataController {
     }
 
     private void captureEPG() {
-        patTable.clear();
-        sdtTable.clear();
         adapterTable.clear();
         epg.clear();
 
@@ -97,23 +92,11 @@ public class MetadataController {
         for (AdapterInfo adapter : adapters) {
             try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
                 File file = TemporaryFiles.getTemporaryFile(".ts");
-                int f = adapter.freq();
                 files.put(adapter, file);
 
-                File patFile = TemporaryFiles.getTemporaryFile("xml");
-                File sdtFile = TemporaryFiles.getTemporaryFile("xml");
+                ts.dumpPSI(adapter, file, TimeUnit.SECONDS.toMillis(30));
 
-                ts.dumpPSI(adapter, file, patFile, sdtFile, TimeUnit.SECONDS.toMillis(30));
-
-                Document pat = DOMUtils.DOC_BUILDER.parse(patFile);
-                Document sdt = DOMUtils.DOC_BUILDER.parse(sdtFile);
-
-                patFile.delete();
-                sdtFile.delete();
-
-                patTable.put(f, pat);
-                sdtTable.put(f, sdt);
-            } catch (IOException | SAXException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
