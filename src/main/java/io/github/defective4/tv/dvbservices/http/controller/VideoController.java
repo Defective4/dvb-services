@@ -25,8 +25,22 @@ public class VideoController {
 
     public void serveVideo(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
         String service = ctx.pathParam("service");
-        if (service.toLowerCase().endsWith(".tg")) service = service.substring(0, service.length() - 3);
+        int dotIndex = service.indexOf('.');
+        if (dotIndex < 0) throw new ServiceNotFoundException("Missing file name extension");
+        String type = service.substring(dotIndex + 1).toLowerCase();
+        service = service.substring(0, dotIndex);
         String fsvc = service;
+
+        boolean video;
+
+        switch (type) {
+            case "ts": {
+                video = true;
+                break;
+            }
+            default:
+                throw new ServiceNotFoundException("Unknown file extension ." + type);
+        }
 
         Optional<AdapterInfo> adapterOpt = server.getMetadataController().getServiceAdapter(service);
         AdapterInfo adapter = adapterOpt
@@ -37,7 +51,7 @@ public class VideoController {
         }
 
         try (TransportStreamProvider provider = server.getTspProviderFactory().create();
-                InputStream in = provider.captureTS(adapter);
+                InputStream in = provider.captureTS(adapter, service);
                 OutputStream out = ctx.outputStream()) {
             this.provider = provider;
 
@@ -45,7 +59,7 @@ public class VideoController {
                 byte[] data = new byte[1024];
                 int read = in.read(data);
                 if (read < 0) break;
-                // TODO filter
+                out.write(data, 0, read);
             }
         } finally {
             provider = null;

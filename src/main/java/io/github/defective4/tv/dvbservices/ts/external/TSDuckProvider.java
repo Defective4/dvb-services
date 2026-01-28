@@ -25,9 +25,10 @@ public class TSDuckProvider extends TransportStreamProvider {
     }
 
     @Override
-    public InputStream captureTS(AdapterInfo adapter) throws IOException {
+    public InputStream captureTS(AdapterInfo adapter, String service) throws IOException {
         checkUsed();
         List<String> args = constructInitialParams(adapter);
+        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "-p", "18", "--service", service));
         args.addAll(List.of());
         process = new ProcessBuilder(args.toArray(new String[0])).start();
         return process.getInputStream();
