@@ -60,6 +60,10 @@ public class MetadataController {
         }, 0, TimeUnit.DAYS.toMillis(1));
     }
 
+    public Optional<AdapterInfo> getServiceAdapter(int frequency) {
+        return adapters.stream().filter(adapter -> adapter.freq() == frequency).findAny();
+    }
+
     public Optional<AdapterInfo> getServiceAdapter(String service) {
         return Optional.ofNullable(adapterTable.get(service));
     }

@@ -35,7 +35,7 @@ public class DVBServer {
                 });
 
                 path("/ts", () -> {
-                    //
+                    get("/{frequency}/{service}", videoController::serveVideoExact);
                     get("/{service}", videoController::serveVideo);
                 });
             });

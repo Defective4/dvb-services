@@ -3,7 +3,8 @@ package io.github.defective4.tv.dvbservices.http.controller;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,13 +25,29 @@ public class VideoController {
     }
 
     public void serveVideo(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
-        String service = ctx.pathParam("service");
-        int dotIndex = service.indexOf('.');
-        if (dotIndex < 0) throw new ServiceNotFoundException("Missing file name extension");
-        String type = service.substring(dotIndex + 1).toLowerCase();
-        service = service.substring(0, dotIndex);
-        String fsvc = service;
+        Entry<String, String> serviceEntry = getService(ctx);
+        String service = serviceEntry.getKey();
+        AdapterInfo adapter = server.getMetadataController().getServiceAdapter(service)
+                .orElseThrow(() -> new ServiceNotFoundException("Service " + service + " is not available"));
+        String type = serviceEntry.getValue();
 
+        serveService(ctx, service, adapter, type);
+    }
+
+    public void serveVideoExact(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
+        Entry<String, String> entry = getService(ctx);
+        String service = entry.getKey();
+        String type = entry.getValue();
+        int frequency = ctx.pathParamAsClass("frequency", int.class)
+                .getOrThrow(arg0 -> new IllegalArgumentException("The frequency must be a valid number"));
+        AdapterInfo adapter = server.getMetadataController().getServiceAdapter(frequency)
+                .orElseThrow(() -> new AdapterUnavailableException("There is no adapter for this frequency"));
+
+        serveService(ctx, service, adapter, type);
+    }
+
+    private void serveService(Context ctx, String service, AdapterInfo adapter, String type)
+            throws ServiceNotFoundException, AdapterUnavailableException, IOException {
         boolean video;
 
         switch (type) {
@@ -41,10 +58,6 @@ public class VideoController {
             default:
                 throw new ServiceNotFoundException("Unknown file extension ." + type);
         }
-
-        Optional<AdapterInfo> adapterOpt = server.getMetadataController().getServiceAdapter(service);
-        AdapterInfo adapter = adapterOpt
-                .orElseThrow(() -> new ServiceNotFoundException("Service " + fsvc + " is not available"));
 
         if (provider != null) {
             throw new AdapterUnavailableException("Adapter for this service is not available");
@@ -64,5 +77,14 @@ public class VideoController {
         } finally {
             provider = null;
         }
+    }
+
+    private static Map.Entry<String, String> getService(Context ctx) throws ServiceNotFoundException {
+        String service = ctx.pathParam("service");
+        int dotIndex = service.indexOf('.');
+        if (dotIndex < 0) throw new ServiceNotFoundException("Missing file name extension");
+        String type = service.substring(dotIndex + 1).toLowerCase();
+        service = service.substring(0, dotIndex);
+        return Map.entry(service, type);
     }
 }

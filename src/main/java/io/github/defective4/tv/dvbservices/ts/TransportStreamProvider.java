@@ -15,6 +15,5 @@ public abstract class TransportStreamProvider implements AutoCloseable {
     @Override
     public abstract void close() throws IOException;
 
-    public abstract void dumpPSI(AdapterInfo adapter, File target, long timeout)
-            throws IOException;
+    public abstract void dumpPSI(AdapterInfo adapter, File target, long timeout) throws IOException;
 }
