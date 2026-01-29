@@ -8,10 +8,11 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
-import io.github.defective4.tv.dvbservices.http.exception.ServiceNotFoundException;
+import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.javalin.http.Context;
@@ -25,18 +26,18 @@ public class VideoController {
         this.server = server;
     }
 
-    public void serveVideo(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
+    public void serveVideo(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
         checkDumping();
         Entry<String, String> serviceEntry = getService(ctx);
         String service = serviceEntry.getKey();
         AdapterInfo adapter = server.getMetadataController().getServiceAdapter(service)
-                .orElseThrow(() -> new ServiceNotFoundException("Service " + service + " is not available"));
+                .orElseThrow(() -> new NotFoundException("Service " + service + " is not available"));
         String type = serviceEntry.getValue();
 
         serveService(ctx, service, adapter, type);
     }
 
-    public void serveVideoExact(Context ctx) throws ServiceNotFoundException, AdapterUnavailableException, IOException {
+    public void serveVideoExact(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
         checkDumping();
         Entry<String, String> entry = getService(ctx);
         String service = entry.getKey();
@@ -44,7 +45,7 @@ public class VideoController {
         int frequency = ctx.pathParamAsClass("frequency", int.class)
                 .getOrThrow(arg0 -> new IllegalArgumentException("The frequency must be a valid number"));
         AdapterInfo adapter = server.getMetadataController().getServiceAdapter(frequency)
-                .orElseThrow(() -> new AdapterUnavailableException("There is no adapter for this frequency"));
+                .orElseThrow(() -> new NotFoundException("There is no adapter for this frequency"));
 
         serveService(ctx, service, adapter, type);
     }
@@ -59,26 +60,26 @@ public class VideoController {
     }
 
     private void serveService(Context ctx, String service, AdapterInfo adapter, String type)
-            throws ServiceNotFoundException, AdapterUnavailableException, IOException {
+            throws NotFoundException, AdapterUnavailableException, IOException {
         boolean video;
 
         switch (type) {
             case "ts": {
                 if (!server.getSettings().getServer().isServeVideo()) {
-                    throw new ServiceNotFoundException("This server does not serve video files");
+                    throw new NotFoundException("This server does not serve video files");
                 }
                 video = true;
                 break;
             }
             case "mp3": {
                 if (!server.getSettings().getServer().isServeMP3()) {
-                    throw new ServiceNotFoundException("This server does not serve audio files");
+                    throw new NotFoundException("This server does not serve audio files");
                 }
                 video = false;
                 break;
             }
             default:
-                throw new ServiceNotFoundException("Unknown file extension ." + type);
+                throw new NotFoundException("Unknown file extension ." + type);
         }
 
         if (provider != null) {
@@ -111,10 +112,10 @@ public class VideoController {
         }
     }
 
-    private static Map.Entry<String, String> getService(Context ctx) throws ServiceNotFoundException {
+    private static Map.Entry<String, String> getService(Context ctx) {
         String service = ctx.pathParam("service");
         int dotIndex = service.indexOf('.');
-        if (dotIndex < 0) throw new ServiceNotFoundException("Missing file name extension");
+        if (dotIndex < 0) throw new IllegalArgumentException("Missing file name extension");
         String type = service.substring(dotIndex + 1).toLowerCase();
         service = service.substring(0, dotIndex);
         return Map.entry(service, type);

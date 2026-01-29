@@ -2,11 +2,12 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
+
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
 import io.github.defective4.tv.dvbservices.http.controller.VideoController;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
-import io.github.defective4.tv.dvbservices.http.exception.ServiceNotFoundException;
+import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
@@ -42,7 +43,8 @@ public class DVBServer {
             });
         });
 
-        javalin.exception(ServiceNotFoundException.class, exceptionController::handleServiceNotFoundException);
+        javalin.exception(IllegalArgumentException.class, exceptionController::handleArgumentException);
+        javalin.exception(NotFoundException.class, exceptionController::handleNotFoundException);
         javalin.exception(AdapterUnavailableException.class, exceptionController::handleAdapterUnavailableException);
     }
 
