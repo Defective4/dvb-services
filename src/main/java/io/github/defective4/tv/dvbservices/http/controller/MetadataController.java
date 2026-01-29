@@ -25,8 +25,11 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
+
 import com.google.gson.Gson;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -46,7 +49,6 @@ public class MetadataController {
 
     private static final String M3U_MIME = "audio/x-mpegurl";
     private static final String XSPF_MIME = "application/xspf+xml";
-    private static final String XSPF_PLAYLIST_TITLE = "TV Playlist";
 
     private final List<AdapterInfo> adapters;
 
@@ -63,7 +65,7 @@ public class MetadataController {
     public MetadataController(List<AdapterInfo> adapters, String baseURL, DVBServer server) {
         this.baseURL = baseURL;
         m3uPlaylist = new M3UPlaylist(Map.of(), baseURL);
-        xspfPlaylist = new XSPFPlaylist(Map.of(), baseURL, XSPF_PLAYLIST_TITLE);
+        xspfPlaylist = new XSPFPlaylist(Map.of(), baseURL);
         this.adapters = Collections.unmodifiableList(adapters);
         this.server = server;
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -98,10 +100,10 @@ public class MetadataController {
         return isDumping;
     }
 
-    public void serveM3U(Context ctx) throws IOException {
+    public void serveM3U(Context ctx, String title) throws IOException {
         ctx.contentType(M3U_MIME);
         try (Writer writer = new OutputStreamWriter(ctx.outputStream())) {
-            m3uPlaylist.save(writer);
+            m3uPlaylist.save(writer, title);
         }
     }
 
@@ -111,10 +113,10 @@ public class MetadataController {
         ctx.result(xmltv);
     }
 
-    public void serveXSPF(Context ctx) throws IOException {
+    public void serveXSPF(Context ctx, String title) throws IOException {
         ctx.contentType(XSPF_MIME);
         try (Writer writer = new OutputStreamWriter(ctx.outputStream())) {
-            xspfPlaylist.save(writer);
+            xspfPlaylist.save(writer, title);
         }
     }
 
@@ -156,7 +158,7 @@ public class MetadataController {
             }
 
             m3uPlaylist = new M3UPlaylist(serviceMap, baseURL);
-            xspfPlaylist = new XSPFPlaylist(serviceMap, baseURL, XSPF_PLAYLIST_TITLE);
+            xspfPlaylist = new XSPFPlaylist(serviceMap, baseURL);
         } finally {
             isDumping = false;
         }

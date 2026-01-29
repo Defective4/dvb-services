@@ -2,6 +2,7 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -11,7 +12,7 @@ import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableExce
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
-import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.javalin.Javalin;
@@ -29,18 +30,25 @@ public class DVBServer {
     public DVBServer(ServerSettings settings) {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
-        metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         videoController = new StreamController(this);
+        metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
             cfg.jsonMapper(new JavalinGson());
             cfg.router.apiBuilder(() -> {
-                path("/meta", () -> {
-                    Metadata mtd = settings.metadata;
-                    if (mtd.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV);
-                    if (mtd.playlists.serveM3UPlaylist) get("/tv.m3u", metadataController::serveM3U);
-                    if (mtd.playlists.serveXSPFPlaylist) get("/tv.xspf", metadataController::serveXSPF);
-                });
+                for (Playlist ps : settings.metadata.playlists) {
+                    String name = ps.name;
+                    String title = ps.title;
+                    get("/playlist/" + name, ctx -> {
+                        switch (ps.type) {
+                            case M3U -> metadataController.serveM3U(ctx, title);
+                            case XSPF -> metadataController.serveXSPF(ctx, title);
+                            default -> { throw new IllegalArgumentException("Unknown playlist type " + ps.type); }
+                        }
+                    });
+                }
+                path("/meta",
+                        () -> { if (settings.metadata.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV); });
 
                 path("/stream", () -> {
                     get("/{frequency}/{service}", videoController::serveVideoExact);

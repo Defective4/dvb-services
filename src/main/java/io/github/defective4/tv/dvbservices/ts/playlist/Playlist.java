@@ -22,5 +22,5 @@ public abstract class Playlist {
         return services;
     }
 
-    public abstract void save(Writer writer) throws IOException;
+    public abstract void save(Writer writer, String title) throws IOException;
 }

@@ -15,9 +15,10 @@ public class M3UPlaylist extends Playlist {
     }
 
     @Override
-    public void save(Writer writer) {
+    public void save(Writer writer, String title) {
         PrintWriter pw = new PrintWriter(writer);
         pw.println("#EXTM3U");
+        pw.println("#PLAYLIST:" + title);
         for (Entry<Integer, Collection<String>> entry : getServices().entrySet()) {
             int freq = entry.getKey();
             for (String service : entry.getValue()) {

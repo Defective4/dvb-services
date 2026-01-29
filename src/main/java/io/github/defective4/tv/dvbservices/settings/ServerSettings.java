@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.github.defective4.tv.dvbservices.AdapterInfo;
+import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
 public class ServerSettings {
 
@@ -28,14 +29,22 @@ public class ServerSettings {
     }
 
     public static class Metadata {
-        public static class Playlists {
-            public boolean serveM3UPlaylist = true;
-            public boolean serveXSPFPlaylist = true;
+        public static class Playlist {
+            public String name = "tv";
+            public String title = "TV Playlist";
+            public PlaylistType type = PlaylistType.M3U;
+
+            public Playlist() {}
+
+            public Playlist(PlaylistType type) {
+                this.type = type;
+                name += "." + type.name().toLowerCase();
+            }
         }
 
         public int epgCaptureTimeout = 30;
         public int epgRefreshIntervalMinutes = 1440;
-        public Playlists playlists = new Playlists();
+        public List<Playlist> playlists = List.of(new Playlist(PlaylistType.M3U), new Playlist(PlaylistType.XSPF));
         public boolean serveXMLTV = true;
     }
 
