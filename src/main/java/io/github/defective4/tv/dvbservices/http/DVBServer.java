@@ -3,6 +3,7 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 
+import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
 import io.github.defective4.tv.dvbservices.http.controller.VideoController;
@@ -15,6 +16,7 @@ import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.javalin.Javalin;
 
 public class DVBServer {
+    private final APIController apiController;
     private final ExceptionController exceptionController = new ExceptionController();
     private final Javalin javalin;
     private final MetadataController metadataController;
@@ -24,22 +26,24 @@ public class DVBServer {
 
     public DVBServer(ServerSettings settings) {
         this.settings = settings;
-        tspProviderFactory = TSDuckProvider.factory(settings.getTools().getTspPath());
-        metadataController = new MetadataController(settings.getAdapters(), settings.getServer().getBaseURL(), this);
+        tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
+        metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         videoController = new VideoController(this);
+        apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
             cfg.router.apiBuilder(() -> {
                 path("/meta", () -> {
-                    Metadata mtd = settings.getMetadata();
-                    if (mtd.isServerM3UPlaylist()) get("/tv.m3u", metadataController::serveM3U);
-                    if (mtd.isServeEPG()) get("/epg.xml", metadataController::serveXMLTV);
-                    if (mtd.isServeXSPFPlaylist()) get("/tv.xspf", metadataController::serveXSPF);
+                    Metadata mtd = settings.metadata;
+                    if (mtd.serveM3UPlaylist) get("/tv.m3u", metadataController::serveM3U);
+                    if (mtd.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV);
+                    if (mtd.serveXSPFPlaylist) get("/tv.xspf", metadataController::serveXSPF);
                 });
 
                 path("/ts", () -> {
                     get("/{frequency}/{service}", videoController::serveVideoExact);
                     get("/{service}", videoController::serveVideo);
                 });
+
             });
         });
 

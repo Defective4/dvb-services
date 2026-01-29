@@ -74,7 +74,7 @@ public class MetadataController {
             public void run() {
                 captureEPG();
             }
-        }, 0, TimeUnit.MINUTES.toMillis(server.getSettings().getMetadata().getEpgRefreshIntervalMinutes()));
+        }, 0, TimeUnit.MINUTES.toMillis(server.getSettings().metadata.epgRefreshIntervalMinutes));
     }
 
     public List<AdapterInfo> getAdapters() {
@@ -131,7 +131,7 @@ public class MetadataController {
                     files.put(adapter, file);
 
                     ts.dumpPSI(adapter, file,
-                            TimeUnit.SECONDS.toMillis(server.getSettings().getMetadata().getEpgCaptureTimeout()));
+                            TimeUnit.SECONDS.toMillis(server.getSettings().metadata.epgCaptureTimeout));
                     dumpingProgress++;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -163,11 +163,11 @@ public class MetadataController {
     private Map<String, List<FriendlyEvent>> getOrCached(AdapterInfo adapter, File file)
             throws NotAnMPEGFileException, IOException, ParseException {
         Map<String, List<FriendlyEvent>> result = null;
-        Cache cache = server.getSettings().getCache();
+        Cache cache = server.getSettings().cache;
         File dataFile = null;
         File metaFile = null;
 
-        if (cache.isEnableMetadataCache()) {
+        if (cache.enableMetadataCache) {
             File dir = cache.getCacheDirectory();
             dir.mkdirs();
 
@@ -186,7 +186,7 @@ public class MetadataController {
 
             long diff = (System.currentTimeMillis() - timestamp) / 1000;
 
-            if (dataFile.isFile() && diff < cache.getCacheTTL() && HashUtil.hashEquals(dataFile, binHash)) {
+            if (dataFile.isFile() && diff < cache.cacheTTL && HashUtil.hashEquals(dataFile, binHash)) {
                 try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
                     result = gson.fromJson(reader, Map.class);
                 }

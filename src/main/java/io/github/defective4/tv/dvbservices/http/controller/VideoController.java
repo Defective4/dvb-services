@@ -65,14 +65,14 @@ public class VideoController {
 
         switch (type) {
             case "ts": {
-                if (!server.getSettings().getServer().isServeVideo()) {
+                if (!server.getSettings().server.serveVideo) {
                     throw new NotFoundException("This server does not serve video files");
                 }
                 video = true;
                 break;
             }
             case "mp3": {
-                if (!server.getSettings().getServer().isServeMP3()) {
+                if (!server.getSettings().server.serveMP3) {
                     throw new NotFoundException("This server does not serve audio files");
                 }
                 video = false;
@@ -92,7 +92,7 @@ public class VideoController {
             this.provider = provider;
 
             if (!video) {
-                try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().getTools().getFFmpegPath())) {
+                try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
                     ffmpeg.convertToMP3(in, out);
                     ffmpeg.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {
