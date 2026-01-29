@@ -15,9 +15,9 @@ public abstract class Playlist {
         this.services = Map.copyOf(services);
     }
 
-    public String format(int freq, String service) {
+    public String format(int freq, String service, MediaFormat format) {
         return String.format("%s/stream/%s/%s", getBaseURL(), freq,
-                URLEncoder.encode(service, StandardCharsets.UTF_8) + ".ts");
+                URLEncoder.encode(service, StandardCharsets.UTF_8) + "." + format.name().toLowerCase());
     }
 
     public String getBaseURL() {
@@ -28,5 +28,5 @@ public abstract class Playlist {
         return services;
     }
 
-    public abstract String save(String title) throws IOException;
+    public abstract String save(String title, MediaFormat format) throws IOException;
 }

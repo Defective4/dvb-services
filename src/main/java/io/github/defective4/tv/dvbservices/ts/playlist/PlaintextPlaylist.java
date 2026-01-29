@@ -14,11 +14,11 @@ public class PlaintextPlaylist extends Playlist {
     }
 
     @Override
-    public String save(String title) throws IOException {
+    public String save(String title, MediaFormat format) throws IOException {
         StringWriter writer = new StringWriter();
         try (PrintWriter pw = new PrintWriter(writer)) {
             for (Entry<Integer, Collection<String>> entry : getServices().entrySet()) {
-                entry.getValue().forEach(svc -> pw.println(format(entry.getKey(), svc)));
+                entry.getValue().forEach(svc -> pw.println(format(entry.getKey(), svc, format)));
             }
         }
         return writer.toString();

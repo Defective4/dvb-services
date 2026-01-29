@@ -1,19 +1,15 @@
 package io.github.defective4.tv.dvbservices.ts.playlist;
 
 import static io.github.defective4.tv.dvbservices.util.DOMUtils.createAndAppendElement;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
 import org.w3c.dom.Document;
-
 import io.github.defective4.tv.dvbservices.util.DOMUtils;
 
 public class XSPFPlaylist extends Playlist {
@@ -23,7 +19,7 @@ public class XSPFPlaylist extends Playlist {
     }
 
     @Override
-    public String save(String title) throws IOException {
+    public String save(String title, MediaFormat format) throws IOException {
         Document root = DOMUtils.DOC_BUILDER.newDocument();
         createAndAppendElement(root, "playlist", playlist -> {
             playlist.setAttribute("xmlns", "http://xspf.org/ns/0/");
@@ -37,7 +33,8 @@ public class XSPFPlaylist extends Playlist {
                     for (String service : entry.getValue()) {
                         int fid = id;
                         createAndAppendElement(tracks, "track", track -> {
-                            createAndAppendElement(track, "location", loc -> loc.setTextContent(format(freq, service)));
+                            createAndAppendElement(track, "location",
+                                    loc -> loc.setTextContent(format(freq, service, format)));
                             createAndAppendElement(track, "title", e -> e.setTextContent(service));
                             createAndAppendElement(track, "extension", ext -> {
                                 ext.setAttribute("application", "http://www.videolan.org/vlc/playlist/0");

@@ -3,8 +3,8 @@ package io.github.defective4.tv.dvbservices.settings;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
+import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
 public class ServerSettings {
@@ -30,6 +30,7 @@ public class ServerSettings {
 
     public static class Metadata {
         public static class Playlist {
+            public MediaFormat format = MediaFormat.TS;
             public String name = "tv";
             public String title = "TV Playlist";
             public PlaylistType type = PlaylistType.M3U;

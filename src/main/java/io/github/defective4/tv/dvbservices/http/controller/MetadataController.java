@@ -24,11 +24,8 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import com.google.gson.Gson;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -36,6 +33,7 @@ import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
+import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaintextPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.util.HashUtil;
@@ -97,14 +95,14 @@ public class MetadataController {
         return isDumping;
     }
 
-    public void serveM3U(Context ctx, String title) {
+    public void serveM3U(Context ctx, String title, MediaFormat format) {
         ctx.contentType(M3U_MIME);
-        ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title));
+        ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title, format));
     }
 
-    public void serveTextPlaylist(Context ctx) throws IOException {
+    public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException {
         ctx.contentType(ContentType.TEXT_PLAIN);
-        ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(M3U_MIME));
+        ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(null, format));
     }
 
     public void serveXMLTV(Context ctx) throws TransformerException {
@@ -113,9 +111,9 @@ public class MetadataController {
         ctx.result(xmltv);
     }
 
-    public void serveXSPF(Context ctx, String title) throws IOException {
+    public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException {
         ctx.contentType(XSPF_MIME);
-        ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title));
+        ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title, format));
     }
 
     private void captureEPG() {

@@ -2,7 +2,6 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
-
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -15,6 +14,7 @@ import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
+import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinGson;
 
@@ -37,13 +37,19 @@ public class DVBServer {
             cfg.jsonMapper(new JavalinGson());
             cfg.router.apiBuilder(() -> {
                 for (Playlist ps : settings.metadata.playlists) {
+                    if (ps.type == null)
+                        throw new IllegalArgumentException("One of the playlists has an unknown type.");
+                    if (ps.format == null)
+                        throw new IllegalArgumentException("One of the playlists has an unknown media format.");
                     String name = ps.name;
                     String title = ps.title;
+                    MediaFormat fmt = ps.format;
+
                     get("/playlist/" + name, ctx -> {
                         switch (ps.type) {
-                            case M3U -> metadataController.serveM3U(ctx, title);
-                            case XSPF -> metadataController.serveXSPF(ctx, title);
-                            case TEXT -> metadataController.serveTextPlaylist(ctx);
+                            case M3U -> metadataController.serveM3U(ctx, title, fmt);
+                            case XSPF -> metadataController.serveXSPF(ctx, title, fmt);
+                            case TEXT -> metadataController.serveTextPlaylist(ctx, fmt);
                             default -> { throw new IllegalArgumentException("Unknown playlist type " + ps.type); }
                         }
                     });
