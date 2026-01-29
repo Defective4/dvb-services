@@ -9,6 +9,7 @@ import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.http.model.APIServices;
 import io.github.defective4.tv.dvbservices.http.model.APIStatus;
 import io.github.defective4.tv.dvbservices.http.model.AdapterState;
+import io.github.defective4.tv.dvbservices.http.model.EPG;
 import io.javalin.http.Context;
 
 public class APIController {
@@ -17,6 +18,11 @@ public class APIController {
 
     public APIController(DVBServer dvbServer) {
         server = dvbServer;
+    }
+
+    public void getEPG(Context ctx) throws UnauthorizedException {
+        authorizeR(ctx);
+        ctx.json(new EPG(server.getMetadataController().getEpg()));
     }
 
     public void getServices(Context ctx) throws UnauthorizedException {

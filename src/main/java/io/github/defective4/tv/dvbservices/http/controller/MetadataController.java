@@ -83,6 +83,10 @@ public class MetadataController {
         return dumpingProgress;
     }
 
+    public Map<String, List<FriendlyEvent>> getEpg() {
+        return Collections.unmodifiableMap(epg);
+    }
+
     public Optional<AdapterInfo> getServiceAdapter(int frequency) {
         return adapters.stream().filter(adapter -> adapter.freq() == frequency).findAny();
     }

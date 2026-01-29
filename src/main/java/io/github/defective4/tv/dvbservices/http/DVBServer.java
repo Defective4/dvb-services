@@ -66,6 +66,10 @@ public class DVBServer {
                     path("/api", () -> {
                         get("/status", apiController::getStatus);
                         get("/services", apiController::getServices);
+                        path("/epg", () -> {
+                            //
+                            get("read", apiController::getEPG);
+                        });
                     });
                 }
             });
