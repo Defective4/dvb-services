@@ -3,6 +3,7 @@ package io.github.defective4.tv.dvbservices.settings;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 
 public class ServerSettings {
@@ -27,7 +28,6 @@ public class ServerSettings {
     }
 
     public static class Metadata {
-
         public static class Playlists {
             public boolean serveM3UPlaylist = true;
             public boolean serveXSPFPlaylist = true;
@@ -46,12 +46,18 @@ public class ServerSettings {
             public boolean serveWAV = false;
         }
 
+        public static class Bind {
+            public String host = "127.0.0.1";
+            public int port = 8080;
+        }
+
         public static class Video {
             public boolean serveTS = true;
         }
 
         public Audio audio = new Audio();
         public String baseURL = "http://127.0.0.1:8080";
+        public Bind bind = new Bind();
         public Video video = new Video();
     }
 

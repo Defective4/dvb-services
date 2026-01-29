@@ -6,8 +6,10 @@ import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 
@@ -31,7 +33,7 @@ public class Main {
                 settings = gson.fromJson(reader, ServerSettings.class);
             }
 
-            new DVBServer(settings).start("0.0.0.0", 8080);
+            new DVBServer(settings).start(settings.server.bind.host, settings.server.bind.port);
         } catch (Exception e) {
             e.printStackTrace();
         }
