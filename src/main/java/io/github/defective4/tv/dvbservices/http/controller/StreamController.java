@@ -14,8 +14,8 @@ import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
+import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.util.FFMpeg;
-import io.github.defective4.tv.dvbservices.util.FFMpeg.AudioFormat;
 import io.javalin.http.Context;
 
 public class StreamController {
@@ -70,32 +70,29 @@ public class StreamController {
 
     private void serveService(Context ctx, String service, AdapterInfo adapter, String type)
             throws NotFoundException, IOException {
-        boolean video;
 
-        AudioFormat fmt = null;
+        MediaFormat fmt;
 
         switch (type) {
             case "ts": {
                 if (!server.getSettings().server.video.serveTS) {
                     throw new NotFoundException("This server does not serve video files");
                 }
-                video = true;
+                fmt = MediaFormat.TS;
                 break;
             }
             case "mp3": {
                 if (!server.getSettings().server.audio.serveMP3) {
                     throw new NotFoundException("This server does not serve mp3 files");
                 }
-                video = false;
-                fmt = AudioFormat.MP3;
+                fmt = MediaFormat.MP3;
                 break;
             }
             case "wav": {
                 if (!server.getSettings().server.audio.serveWAV) {
                     throw new NotFoundException("This server does not serve wav files");
                 }
-                video = false;
-                fmt = AudioFormat.WAV;
+                fmt = MediaFormat.WAV;
                 break;
             }
             default:
@@ -103,24 +100,24 @@ public class StreamController {
         }
 
         try (TransportStreamProvider provider = server.getTspProviderFactory().create();
-                InputStream in = provider.captureTS(adapter, service, !video);
+                InputStream in = provider.captureTS(adapter, service, !fmt.isVideo());
                 OutputStream out = ctx.outputStream()) {
             this.provider = provider;
 
-            if (!video) {
-                try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
-                    ffmpeg.convertToMP3(in, out, fmt, server.getSettings().server.audio.ffmpegOpts.split(" "));
-                    ffmpeg.closePeacefully();
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                }
-            } else {
+            if (fmt.isVideo()) {
                 byte[] data = new byte[1024];
                 int read;
                 while (true) {
                     read = in.read(data);
                     if (read < 0) break;
                     out.write(data, 0, read);
+                }
+            } else {
+                try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
+                    ffmpeg.convertToMP3(in, out, fmt, server.getSettings().server.audio.ffmpegOpts.split(" "));
+                    ffmpeg.closePeacefully();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
                 }
             }
         } finally {

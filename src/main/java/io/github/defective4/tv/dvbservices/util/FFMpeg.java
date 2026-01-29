@@ -11,11 +11,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class FFMpeg implements AutoCloseable {
+import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 
-    public static enum AudioFormat {
-        MP3, WAV
-    }
+public class FFMpeg implements AutoCloseable {
 
     private final String ffmpegPath;
     private Process process;
@@ -35,7 +33,7 @@ public class FFMpeg implements AutoCloseable {
         process.waitFor();
     }
 
-    public void convertToMP3(InputStream from, OutputStream to, AudioFormat fmt, String... opts)
+    public void convertToMP3(InputStream from, OutputStream to, MediaFormat fmt, String... opts)
             throws IOException, InterruptedException, ExecutionException {
         if (process != null) throw new IllegalStateException("Converter already started");
 
