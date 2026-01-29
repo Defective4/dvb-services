@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;

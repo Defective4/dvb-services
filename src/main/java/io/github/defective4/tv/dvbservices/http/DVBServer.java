@@ -2,6 +2,7 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -40,7 +41,7 @@ public class DVBServer {
                     if (mtd.serveXSPFPlaylist) get("/tv.xspf", metadataController::serveXSPF);
                 });
 
-                path("/ts", () -> {
+                path("/watch", () -> {
                     get("/{frequency}/{service}", videoController::serveVideoExact);
                     get("/{service}", videoController::serveVideo);
                 });
