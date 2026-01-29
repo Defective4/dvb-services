@@ -2,7 +2,6 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
-
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -14,6 +13,7 @@ import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.javalin.Javalin;
+import io.javalin.json.JavalinGson;
 
 public class DVBServer {
     private final APIController apiController;
@@ -31,6 +31,7 @@ public class DVBServer {
         videoController = new VideoController(this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
+            cfg.jsonMapper(new JavalinGson());
             cfg.router.apiBuilder(() -> {
                 path("/meta", () -> {
                     Metadata mtd = settings.metadata;
@@ -44,6 +45,12 @@ public class DVBServer {
                     get("/{service}", videoController::serveVideo);
                 });
 
+                if (settings.server.enableAPIEndpoint) {
+                    path("/api", () -> {
+                        get("/status", apiController::getStatus);
+                        get("/services", apiController::getServices);
+                    });
+                }
             });
         });
 

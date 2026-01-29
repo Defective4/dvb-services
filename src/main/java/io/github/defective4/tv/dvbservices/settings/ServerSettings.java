@@ -3,7 +3,6 @@ package io.github.defective4.tv.dvbservices.settings;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 
 public class ServerSettings {

@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
@@ -26,8 +25,12 @@ public class VideoController {
         this.server = server;
     }
 
+    public boolean isWatching() {
+        return provider != null;
+    }
+
     public void serveVideo(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
-        checkDumping();
+        checkAvailable();
         Entry<String, String> serviceEntry = getService(ctx);
         String service = serviceEntry.getKey();
         AdapterInfo adapter = server.getMetadataController().getServiceAdapter(service)
@@ -38,7 +41,7 @@ public class VideoController {
     }
 
     public void serveVideoExact(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
-        checkDumping();
+        checkAvailable();
         Entry<String, String> entry = getService(ctx);
         String service = entry.getKey();
         String type = entry.getValue();
@@ -50,7 +53,11 @@ public class VideoController {
         serveService(ctx, service, adapter, type);
     }
 
-    private void checkDumping() throws AdapterUnavailableException {
+    private void checkAvailable() throws AdapterUnavailableException {
+        if (isWatching()) {
+            throw new AdapterUnavailableException("Adapter for this service is not available");
+        }
+
         MetadataController mtd = server.getMetadataController();
         if (mtd.isDumping()) {
             throw new AdapterUnavailableException(
@@ -60,7 +67,7 @@ public class VideoController {
     }
 
     private void serveService(Context ctx, String service, AdapterInfo adapter, String type)
-            throws NotFoundException, AdapterUnavailableException, IOException {
+            throws NotFoundException, IOException {
         boolean video;
 
         switch (type) {
@@ -80,10 +87,6 @@ public class VideoController {
             }
             default:
                 throw new NotFoundException("Unknown file extension ." + type);
-        }
-
-        if (provider != null) {
-            throw new AdapterUnavailableException("Adapter for this service is not available");
         }
 
         try (TransportStreamProvider provider = server.getTspProviderFactory().create();
