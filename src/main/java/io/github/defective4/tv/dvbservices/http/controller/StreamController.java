@@ -18,12 +18,12 @@ import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.github.defective4.tv.dvbservices.util.FFMpeg.AudioFormat;
 import io.javalin.http.Context;
 
-public class VideoController {
+public class StreamController {
     private TransportStreamProvider provider;
     private final DVBServer server;
     private final ExecutorService service = Executors.newSingleThreadExecutor();
 
-    public VideoController(DVBServer server) {
+    public StreamController(DVBServer server) {
         this.server = server;
     }
 

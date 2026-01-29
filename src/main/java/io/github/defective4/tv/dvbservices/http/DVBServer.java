@@ -6,7 +6,7 @@ import static io.javalin.apibuilder.ApiBuilder.path;
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
-import io.github.defective4.tv.dvbservices.http.controller.VideoController;
+import io.github.defective4.tv.dvbservices.http.controller.StreamController;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
@@ -23,13 +23,13 @@ public class DVBServer {
     private final MetadataController metadataController;
     private final ServerSettings settings;
     private final TransportStreamProviderFactory<?> tspProviderFactory;
-    private final VideoController videoController;
+    private final StreamController videoController;
 
     public DVBServer(ServerSettings settings) {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
-        videoController = new VideoController(this);
+        videoController = new StreamController(this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
             cfg.jsonMapper(new JavalinGson());
@@ -72,7 +72,7 @@ public class DVBServer {
         return tspProviderFactory;
     }
 
-    public VideoController getVideoController() {
+    public StreamController getVideoController() {
         return videoController;
     }
 
