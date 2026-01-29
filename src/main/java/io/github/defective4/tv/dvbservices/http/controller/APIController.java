@@ -2,9 +2,9 @@ package io.github.defective4.tv.dvbservices.http.controller;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
+import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.http.model.APIServices;
 import io.github.defective4.tv.dvbservices.http.model.APIStatus;
@@ -47,7 +47,9 @@ public class APIController {
         if (server.getSettings().api.protectReadEndpoints) authorize(ctx);
     }
 
-    private void authorizeW(Context ctx) throws UnauthorizedException {
+    private void authorizeW(Context ctx) throws UnauthorizedException, APIReadOnlyException {
+        if (server.getSettings().api.readOnly)
+            throw new APIReadOnlyException("This server's API is set to read-only mode");
         if (server.getSettings().api.protectWriteEndpoints) authorize(ctx);
     }
 }
