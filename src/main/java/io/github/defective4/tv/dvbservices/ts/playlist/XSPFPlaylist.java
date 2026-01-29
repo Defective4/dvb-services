@@ -44,7 +44,7 @@ public class XSPFPlaylist extends Playlist {
                         int fid = id;
                         createAndAppendElement(tracks, "track", track -> {
                             createAndAppendElement(track, "location",
-                                    loc -> loc.setTextContent(String.format("%s/watch/%s/%s", getBaseURL(), freq,
+                                    loc -> loc.setTextContent(String.format("%s/stream/%s/%s", getBaseURL(), freq,
                                             URLEncoder.encode(service, StandardCharsets.UTF_8) + ".ts")));
                             createAndAppendElement(track, "title", title -> title.setTextContent(service));
                             createAndAppendElement(track, "extension", ext -> {

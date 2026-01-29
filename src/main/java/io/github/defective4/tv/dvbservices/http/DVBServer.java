@@ -41,7 +41,7 @@ public class DVBServer {
                     if (mtd.serveXSPFPlaylist) get("/tv.xspf", metadataController::serveXSPF);
                 });
 
-                path("/watch", () -> {
+                path("/stream", () -> {
                     get("/{frequency}/{service}", videoController::serveVideoExact);
                     get("/{service}", videoController::serveVideo);
                 });
