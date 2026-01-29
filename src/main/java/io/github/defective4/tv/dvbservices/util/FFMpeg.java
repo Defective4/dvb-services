@@ -3,12 +3,20 @@ package io.github.defective4.tv.dvbservices.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class FFMpeg implements AutoCloseable {
+
+    public static enum AudioFormat {
+        MP3, WAV
+    }
+
     private final String ffmpegPath;
     private Process process;
     private final ExecutorService service = Executors.newSingleThreadExecutor();
@@ -27,10 +35,15 @@ public class FFMpeg implements AutoCloseable {
         process.waitFor();
     }
 
-    public void convertToMP3(InputStream from, OutputStream to)
+    public void convertToMP3(InputStream from, OutputStream to, AudioFormat fmt, String... opts)
             throws IOException, InterruptedException, ExecutionException {
         if (process != null) throw new IllegalStateException("Converter already started");
-        process = ProcessUtils.start(ffmpegPath, "-i", "-", "-f", "mp3", "-");
+
+        List<String> args = new ArrayList<>(List.of(ffmpegPath, "-i", "-", "-f", fmt.name().toLowerCase()));
+        if (opts != null) Collections.addAll(args, opts);
+        args.add("-");
+
+        process = ProcessUtils.start(args.toArray(new String[0]));
 
         Future<Boolean> task = service.submit(() -> {
             byte[] buffer = new byte[1024];

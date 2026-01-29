@@ -28,10 +28,20 @@ public class ServerSettings {
     }
 
     public static class Server {
+        public static class Audio {
+            public String ffmpegOpts = "-aq 2";
+            public boolean serveMP3 = true;
+            public boolean serveWAV = false;
+        }
+
+        public static class Video {
+            public boolean serveTS = true;
+        }
+
+        public Audio audio = new Audio();
         public String baseURL = "http://127.0.0.1:8080";
         public boolean enableAPIEndpoint = true;
-        public boolean serveMP3 = false;
-        public boolean serveVideo = true;
+        public Video video = new Video();
     }
 
     public static class Tools {

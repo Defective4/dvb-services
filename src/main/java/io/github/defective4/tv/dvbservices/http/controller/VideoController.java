@@ -15,6 +15,7 @@ import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableExce
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.util.FFMpeg;
+import io.github.defective4.tv.dvbservices.util.FFMpeg.AudioFormat;
 import io.javalin.http.Context;
 
 public class VideoController {
@@ -71,19 +72,30 @@ public class VideoController {
             throws NotFoundException, IOException {
         boolean video;
 
+        AudioFormat fmt = null;
+
         switch (type) {
             case "ts": {
-                if (!server.getSettings().server.serveVideo) {
+                if (!server.getSettings().server.video.serveTS) {
                     throw new NotFoundException("This server does not serve video files");
                 }
                 video = true;
                 break;
             }
             case "mp3": {
-                if (!server.getSettings().server.serveMP3) {
-                    throw new NotFoundException("This server does not serve audio files");
+                if (!server.getSettings().server.audio.serveMP3) {
+                    throw new NotFoundException("This server does not serve mp3 files");
                 }
                 video = false;
+                fmt = AudioFormat.MP3;
+                break;
+            }
+            case "wav": {
+                if (!server.getSettings().server.audio.serveWAV) {
+                    throw new NotFoundException("This server does not serve wav files");
+                }
+                video = false;
+                fmt = AudioFormat.WAV;
                 break;
             }
             default:
@@ -97,7 +109,7 @@ public class VideoController {
 
             if (!video) {
                 try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
-                    ffmpeg.convertToMP3(in, out);
+                    ffmpeg.convertToMP3(in, out, fmt, server.getSettings().server.audio.ffmpegOpts.split(" "));
                     ffmpeg.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
