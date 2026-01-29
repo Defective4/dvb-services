@@ -9,6 +9,7 @@ import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
 import io.github.defective4.tv.dvbservices.http.controller.StreamController;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
+import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
@@ -46,7 +47,7 @@ public class DVBServer {
                     get("/{service}", videoController::serveVideo);
                 });
 
-                if (settings.server.enableAPIEndpoint) {
+                if (settings.api.enable) {
                     path("/api", () -> {
                         get("/status", apiController::getStatus);
                         get("/services", apiController::getServices);
@@ -58,6 +59,7 @@ public class DVBServer {
         javalin.exception(IllegalArgumentException.class, exceptionController::handleArgumentException);
         javalin.exception(NotFoundException.class, exceptionController::handleNotFoundException);
         javalin.exception(AdapterUnavailableException.class, exceptionController::handleAdapterUnavailableException);
+        javalin.exception(UnauthorizedException.class, exceptionController::handleUnauthorizedException);
     }
 
     public MetadataController getMetadataController() {

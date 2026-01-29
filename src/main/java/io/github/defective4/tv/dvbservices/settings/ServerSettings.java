@@ -8,6 +8,14 @@ import io.github.defective4.tv.dvbservices.AdapterInfo;
 
 public class ServerSettings {
 
+    public static class API {
+        public boolean enable = true;
+        public boolean protectReadEndpoints = false;
+        public boolean protectWriteEndpoints = true;
+        public boolean readOnly = true;
+        public String token = "CHANGEME";
+    }
+
     public static class Cache {
         public String cacheDirectory = "cache";
         public int cacheTTL = 86400;
@@ -40,7 +48,6 @@ public class ServerSettings {
 
         public Audio audio = new Audio();
         public String baseURL = "http://127.0.0.1:8080";
-        public boolean enableAPIEndpoint = true;
         public Video video = new Video();
     }
 
@@ -50,6 +57,7 @@ public class ServerSettings {
     }
 
     public final List<AdapterInfo> adapters = List.of(new AdapterInfo("file", Map.of(), 538e6f, "/tmp/tv.ts"));
+    public API api = new API();
     public Cache cache = new Cache();
     public Metadata metadata = new Metadata();
     public Server server = new Server();
