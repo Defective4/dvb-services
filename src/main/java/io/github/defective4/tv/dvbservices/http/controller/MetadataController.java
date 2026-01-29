@@ -71,7 +71,7 @@ public class MetadataController {
             public void run() {
                 captureEPG();
             }
-        }, 0, TimeUnit.DAYS.toMillis(1));
+        }, 0, TimeUnit.MINUTES.toMillis(server.getSettings().getMetadata().getEpgRefreshIntervalMinutes()));
     }
 
     public List<AdapterInfo> getAdapters() {
@@ -127,7 +127,8 @@ public class MetadataController {
                     File file = TemporaryFiles.getTemporaryFile(".ts");
                     files.put(adapter, file);
 
-                    ts.dumpPSI(adapter, file, TimeUnit.SECONDS.toMillis(30));
+                    ts.dumpPSI(adapter, file,
+                            TimeUnit.SECONDS.toMillis(server.getSettings().getMetadata().getEpgCaptureTimeout()));
                     dumpingProgress++;
                 } catch (IOException e) {
                     e.printStackTrace();

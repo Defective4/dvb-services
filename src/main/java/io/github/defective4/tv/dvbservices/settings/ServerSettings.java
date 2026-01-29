@@ -39,9 +39,19 @@ public class ServerSettings {
     }
 
     public static class Metadata {
+        private int epgCaptureTimeout = 30;
+        private int epgRefreshIntervalMinutes = 1440;
         private boolean serverM3UPlaylist = true;
         private boolean serveXMLTV = true;
         private boolean serveXSPFPlaylist = true;
+
+        public int getEpgCaptureTimeout() {
+            return epgCaptureTimeout;
+        }
+
+        public int getEpgRefreshIntervalMinutes() {
+            return epgRefreshIntervalMinutes;
+        }
 
         public boolean isServeEPG() {
             return serveXMLTV;
@@ -57,6 +67,14 @@ public class ServerSettings {
 
         public boolean isServeXSPFPlaylist() {
             return serveXSPFPlaylist;
+        }
+
+        public void setEpgCaptureTimeout(int epgCaptureTimeout) {
+            this.epgCaptureTimeout = epgCaptureTimeout;
+        }
+
+        public void setEpgRefreshIntervalMinutes(int epgRefreshIntervalMinutes) {
+            this.epgRefreshIntervalMinutes = epgRefreshIntervalMinutes;
         }
 
         public void setServerM3UPlaylist(boolean serverM3UPlaylist) {
