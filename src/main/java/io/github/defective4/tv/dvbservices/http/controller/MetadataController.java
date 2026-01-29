@@ -25,11 +25,8 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import com.google.gson.Gson;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -122,8 +119,7 @@ public class MetadataController {
     }
 
     private void captureEPG() {
-        if(server.getVideoController().isWatching()) return;
-        if(isDumping()) return;
+        if (server.getVideoController().isWatching() || isDumping()) return;
         isDumping = true;
         dumpingProgress = 0;
         try {

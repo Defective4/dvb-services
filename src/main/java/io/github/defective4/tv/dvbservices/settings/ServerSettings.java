@@ -27,11 +27,16 @@ public class ServerSettings {
     }
 
     public static class Metadata {
+
+        public static class Playlists {
+            public boolean serveM3UPlaylist = true;
+            public boolean serveXSPFPlaylist = true;
+        }
+
         public int epgCaptureTimeout = 30;
         public int epgRefreshIntervalMinutes = 1440;
-        public boolean serveM3UPlaylist = true;
+        public Playlists playlists = new Playlists();
         public boolean serveXMLTV = true;
-        public boolean serveXSPFPlaylist = true;
     }
 
     public static class Server {

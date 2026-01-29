@@ -37,9 +37,9 @@ public class DVBServer {
             cfg.router.apiBuilder(() -> {
                 path("/meta", () -> {
                     Metadata mtd = settings.metadata;
-                    if (mtd.serveM3UPlaylist) get("/tv.m3u", metadataController::serveM3U);
                     if (mtd.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV);
-                    if (mtd.serveXSPFPlaylist) get("/tv.xspf", metadataController::serveXSPF);
+                    if (mtd.playlists.serveM3UPlaylist) get("/tv.m3u", metadataController::serveM3U);
+                    if (mtd.playlists.serveXSPFPlaylist) get("/tv.xspf", metadataController::serveXSPF);
                 });
 
                 path("/stream", () -> {
