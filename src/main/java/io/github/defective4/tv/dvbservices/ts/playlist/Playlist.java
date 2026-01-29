@@ -1,7 +1,8 @@
 package io.github.defective4.tv.dvbservices.ts.playlist;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 
@@ -9,9 +10,14 @@ public abstract class Playlist {
     private final String baseURL;
     private final Map<Integer, Collection<String>> services;
 
-    public Playlist(Map<Integer, Collection<String>> services, String baseURL) {
+    protected Playlist(Map<Integer, Collection<String>> services, String baseURL) {
         this.baseURL = baseURL;
         this.services = Map.copyOf(services);
+    }
+
+    public String format(int freq, String service) {
+        return String.format("%s/stream/%s/%s", getBaseURL(), freq,
+                URLEncoder.encode(service, StandardCharsets.UTF_8) + ".ts");
     }
 
     public String getBaseURL() {
@@ -22,5 +28,5 @@ public abstract class Playlist {
         return services;
     }
 
-    public abstract void save(Writer writer, String title) throws IOException;
+    public abstract String save(String title) throws IOException;
 }

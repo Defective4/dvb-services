@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +36,7 @@ import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
-import io.github.defective4.tv.dvbservices.ts.playlist.Playlist;
+import io.github.defective4.tv.dvbservices.ts.playlist.PlaintextPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.util.HashUtil;
 import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
@@ -58,14 +57,12 @@ public class MetadataController {
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
     private final Gson gson = new Gson();
     private boolean isDumping;
-    private Playlist m3uPlaylist, xspfPlaylist;
     private final DVBServer server;
+    private final Map<Integer, Collection<String>> serviceMap = new LinkedHashMap<>();
     private final Timer timer = new Timer(true);
 
     public MetadataController(List<AdapterInfo> adapters, String baseURL, DVBServer server) {
         this.baseURL = baseURL;
-        m3uPlaylist = new M3UPlaylist(Map.of(), baseURL);
-        xspfPlaylist = new XSPFPlaylist(Map.of(), baseURL);
         this.adapters = Collections.unmodifiableList(adapters);
         this.server = server;
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -100,11 +97,14 @@ public class MetadataController {
         return isDumping;
     }
 
-    public void serveM3U(Context ctx, String title) throws IOException {
+    public void serveM3U(Context ctx, String title) {
         ctx.contentType(M3U_MIME);
-        try (Writer writer = new OutputStreamWriter(ctx.outputStream())) {
-            m3uPlaylist.save(writer, title);
-        }
+        ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title));
+    }
+
+    public void serveTextPlaylist(Context ctx) throws IOException {
+        ctx.contentType(ContentType.TEXT_PLAIN);
+        ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(M3U_MIME));
     }
 
     public void serveXMLTV(Context ctx) throws TransformerException {
@@ -115,9 +115,7 @@ public class MetadataController {
 
     public void serveXSPF(Context ctx, String title) throws IOException {
         ctx.contentType(XSPF_MIME);
-        try (Writer writer = new OutputStreamWriter(ctx.outputStream())) {
-            xspfPlaylist.save(writer, title);
-        }
+        ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title));
     }
 
     private void captureEPG() {
@@ -126,6 +124,7 @@ public class MetadataController {
         dumpingProgress = 0;
         try {
             adapterTable.clear();
+            serviceMap.clear();
             epg.clear();
 
             Map<AdapterInfo, File> files = new LinkedHashMap<>();
@@ -142,8 +141,6 @@ public class MetadataController {
                 }
             }
 
-            Map<Integer, Collection<String>> serviceMap = new LinkedHashMap<>();
-
             for (Entry<AdapterInfo, File> entry : files.entrySet()) {
                 try {
                     Map<String, List<FriendlyEvent>> result = getOrCached(entry.getKey(), entry.getValue());
@@ -157,8 +154,6 @@ public class MetadataController {
                 }
             }
 
-            m3uPlaylist = new M3UPlaylist(serviceMap, baseURL);
-            xspfPlaylist = new XSPFPlaylist(serviceMap, baseURL);
         } finally {
             isDumping = false;
         }

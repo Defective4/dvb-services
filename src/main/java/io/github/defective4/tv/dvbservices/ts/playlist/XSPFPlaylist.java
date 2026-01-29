@@ -4,9 +4,6 @@ import static io.github.defective4.tv.dvbservices.util.DOMUtils.createAndAppendE
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.Writer;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,7 +23,7 @@ public class XSPFPlaylist extends Playlist {
     }
 
     @Override
-    public void save(Writer writer, String title) throws IOException {
+    public String save(String title) throws IOException {
         Document root = DOMUtils.DOC_BUILDER.newDocument();
         createAndAppendElement(root, "playlist", playlist -> {
             playlist.setAttribute("xmlns", "http://xspf.org/ns/0/");
@@ -40,9 +37,7 @@ public class XSPFPlaylist extends Playlist {
                     for (String service : entry.getValue()) {
                         int fid = id;
                         createAndAppendElement(tracks, "track", track -> {
-                            createAndAppendElement(track, "location",
-                                    loc -> loc.setTextContent(String.format("%s/stream/%s/%s", getBaseURL(), freq,
-                                            URLEncoder.encode(service, StandardCharsets.UTF_8) + ".ts")));
+                            createAndAppendElement(track, "location", loc -> loc.setTextContent(format(freq, service)));
                             createAndAppendElement(track, "title", e -> e.setTextContent(service));
                             createAndAppendElement(track, "extension", ext -> {
                                 ext.setAttribute("application", "http://www.videolan.org/vlc/playlist/0");
@@ -65,8 +60,7 @@ public class XSPFPlaylist extends Playlist {
         } catch (TransformerException ex) {
             throw new IllegalStateException(ex);
         }
-        writer.write(result.toString());
-        writer.flush();
+        return result.toString();
     }
 
 }
