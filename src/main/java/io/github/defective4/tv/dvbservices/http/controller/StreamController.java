@@ -71,31 +71,14 @@ public class StreamController {
             throws NotFoundException, IOException {
 
         MediaFormat fmt;
+        try {
+            fmt = MediaFormat.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new NotFoundException("Unknown media format: " + type);
+        }
 
-        switch (type) {
-            case "ts": {
-                if (!server.getSettings().server.video.serveTS) {
-                    throw new NotFoundException("This server does not serve video files");
-                }
-                fmt = MediaFormat.TS;
-                break;
-            }
-            case "mp3": {
-                if (!server.getSettings().server.audio.serveMP3) {
-                    throw new NotFoundException("This server does not serve mp3 files");
-                }
-                fmt = MediaFormat.MP3;
-                break;
-            }
-            case "wav": {
-                if (!server.getSettings().server.audio.serveWAV) {
-                    throw new NotFoundException("This server does not serve wav files");
-                }
-                fmt = MediaFormat.WAV;
-                break;
-            }
-            default:
-                throw new NotFoundException("Unknown file extension ." + type);
+        if (!server.getSettings().server.formats.contains(fmt)) {
+            throw new NotFoundException(String.format("This server does not serve %s files", fmt.name()));
         }
 
         try (TransportStreamProvider provider = server.getTspProviderFactory().create();
