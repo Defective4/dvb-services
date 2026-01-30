@@ -25,6 +25,10 @@ public class ExceptionController {
         simpleResponse(ctx, ex, HttpStatus.NOT_FOUND);
     }
 
+    public void handleStateException(IllegalStateException ex, Context ctx) {
+        simpleResponse(ctx, ex, HttpStatus.FORBIDDEN);
+    }
+
     public void handleUnauthorizedException(UnauthorizedException ex, Context ctx) {
         simpleResponse(ctx, ex, HttpStatus.UNAUTHORIZED);
     }

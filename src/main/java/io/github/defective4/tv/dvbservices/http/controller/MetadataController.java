@@ -71,6 +71,52 @@ public class MetadataController {
         }, 0, TimeUnit.MINUTES.toMillis(server.getSettings().metadata.epgRefreshIntervalMinutes));
     }
 
+    public void captureEPG() {
+        captureEPG(false);
+    }
+
+    public void captureEPG(boolean ignoreCache) {
+        if (server.getStreamController().isWatching() || isDumping()) return;
+        isDumping = true;
+        dumpingProgress = 0;
+        try {
+            adapterTable.clear();
+            serviceMap.clear();
+            epg.clear();
+
+            Map<AdapterInfo, File> files = new LinkedHashMap<>();
+            for (AdapterInfo adapter : adapters) {
+                try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
+                    File file = TemporaryFiles.getTemporaryFile(".ts");
+                    files.put(adapter, file);
+
+                    ts.dumpPSI(adapter, file,
+                            TimeUnit.SECONDS.toMillis(server.getSettings().metadata.epgCaptureTimeout));
+                    dumpingProgress++;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for (Entry<AdapterInfo, File> entry : files.entrySet()) {
+                try {
+                    Map<String, List<FriendlyEvent>> result = getOrCached(entry.getKey(), entry.getValue(),
+                            ignoreCache);
+
+                    for (String svc : result.keySet()) adapterTable.put(svc, entry.getKey());
+                    entry.getValue().delete();
+                    serviceMap.computeIfAbsent(entry.getKey().freq(), t -> new ArrayList<>()).addAll(result.keySet());
+                    epg.putAll(result);
+                } catch (NotAnMPEGFileException | IOException | ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        } finally {
+            isDumping = false;
+        }
+    }
+
     public List<AdapterInfo> getAdapters() {
         return adapters;
     }
@@ -120,48 +166,7 @@ public class MetadataController {
         ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title, format));
     }
 
-    private void captureEPG() {
-        if (server.getVideoController().isWatching() || isDumping()) return;
-        isDumping = true;
-        dumpingProgress = 0;
-        try {
-            adapterTable.clear();
-            serviceMap.clear();
-            epg.clear();
-
-            Map<AdapterInfo, File> files = new LinkedHashMap<>();
-            for (AdapterInfo adapter : adapters) {
-                try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
-                    File file = TemporaryFiles.getTemporaryFile(".ts");
-                    files.put(adapter, file);
-
-                    ts.dumpPSI(adapter, file,
-                            TimeUnit.SECONDS.toMillis(server.getSettings().metadata.epgCaptureTimeout));
-                    dumpingProgress++;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            for (Entry<AdapterInfo, File> entry : files.entrySet()) {
-                try {
-                    Map<String, List<FriendlyEvent>> result = getOrCached(entry.getKey(), entry.getValue());
-
-                    for (String svc : result.keySet()) adapterTable.put(svc, entry.getKey());
-                    entry.getValue().delete();
-                    serviceMap.computeIfAbsent(entry.getKey().freq(), t -> new ArrayList<>()).addAll(result.keySet());
-                    epg.putAll(result);
-                } catch (NotAnMPEGFileException | IOException | ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        } finally {
-            isDumping = false;
-        }
-    }
-
-    private Map<String, List<FriendlyEvent>> getOrCached(AdapterInfo adapter, File file)
+    private Map<String, List<FriendlyEvent>> getOrCached(AdapterInfo adapter, File file, boolean ignoreCache)
             throws NotAnMPEGFileException, IOException, ParseException {
         Map<String, List<FriendlyEvent>> result = null;
         Cache cache = server.getSettings().cache;
@@ -178,7 +183,7 @@ public class MetadataController {
 
             long timestamp = 0;
             byte[] binHash = new byte[16];
-            if (metaFile.isFile()) {
+            if (metaFile.isFile() && !ignoreCache) {
                 try (DataInputStream in = new DataInputStream(new FileInputStream(metaFile))) {
                     timestamp = in.readLong();
                     in.readFully(binHash);
@@ -187,7 +192,7 @@ public class MetadataController {
 
             long diff = (System.currentTimeMillis() - timestamp) / 1000;
 
-            if (dataFile.isFile() && diff < cache.cacheTTL && HashUtil.hashEquals(dataFile, binHash)) {
+            if (dataFile.isFile() && !ignoreCache && diff < cache.cacheTTL && HashUtil.hashEquals(dataFile, binHash)) {
                 try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
                     result = gson.fromJson(reader, Map.class);
                 }

@@ -2,9 +2,13 @@ package io.github.defective4.tv.dvbservices.http.controller;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
+import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.http.model.APIServices;
 import io.github.defective4.tv.dvbservices.http.model.APIStatus;
@@ -13,6 +17,10 @@ import io.github.defective4.tv.dvbservices.http.model.EPG;
 import io.javalin.http.Context;
 
 public class APIController {
+
+    private final ExecutorService scannerService = Executors.newSingleThreadExecutor();
+
+    private Future<Object> scannerTask;
 
     private final DVBServer server;
 
@@ -36,8 +44,23 @@ public class APIController {
 
     public void getStatus(Context ctx) throws UnauthorizedException {
         authorizeR(ctx);
-        ctx.json(new APIStatus(server.getVideoController().isWatching() ? AdapterState.WATCHING
+        ctx.json(new APIStatus(server.getStreamController().isWatching() ? AdapterState.WATCHING
                 : server.getMetadataController().isDumping() ? AdapterState.CAPTURING_EPG : AdapterState.AVAILABLE));
+    }
+
+    public void scanEPG(Context ctx) throws UnauthorizedException, APIReadOnlyException, AdapterUnavailableException {
+        authorizeW(ctx);
+        MetadataController metadataController = server.getMetadataController();
+        if (scannerTask != null && !scannerTask.isDone() && !scannerTask.isCancelled()) {
+            throw new IllegalStateException("An EPG scanner task is already pending");
+        }
+        if (server.getStreamController().isWatching() || metadataController.isDumping())
+            throw new AdapterUnavailableException("The adapter is in use");
+
+        scannerTask = scannerService.submit(() -> {
+            metadataController.captureEPG(true);
+            return null;
+        });
     }
 
     private void authorize(Context ctx) throws UnauthorizedException {

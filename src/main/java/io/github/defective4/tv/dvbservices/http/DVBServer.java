@@ -24,13 +24,13 @@ public class DVBServer {
     private final Javalin javalin;
     private final MetadataController metadataController;
     private final ServerSettings settings;
+    private final StreamController streamController;
     private final TransportStreamProviderFactory<?> tspProviderFactory;
-    private final StreamController videoController;
 
     public DVBServer(ServerSettings settings) {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
-        videoController = new StreamController(this);
+        streamController = new StreamController(this);
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
@@ -58,8 +58,8 @@ public class DVBServer {
                         () -> { if (settings.metadata.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV); });
 
                 path("/stream", () -> {
-                    get("/{frequency}/{service}", videoController::serveVideoExact);
-                    get("/{service}", videoController::serveVideo);
+                    get("/{frequency}/{service}", streamController::serveVideoExact);
+                    get("/{service}", streamController::serveVideo);
                 });
 
                 if (settings.api.enable) {
@@ -67,7 +67,7 @@ public class DVBServer {
                         get("/status", apiController::getStatus);
                         get("/services", apiController::getServices);
                         path("/epg", () -> {
-                            //
+                            get("scan", apiController::scanEPG);
                             get("read", apiController::getEPG);
                         });
                     });
@@ -75,6 +75,7 @@ public class DVBServer {
             });
         });
 
+        javalin.exception(IllegalStateException.class, exceptionController::handleStateException);
         javalin.exception(IllegalArgumentException.class, exceptionController::handleArgumentException);
         javalin.exception(NotFoundException.class, exceptionController::handleNotFoundException);
         javalin.exception(AdapterUnavailableException.class, exceptionController::handleAdapterUnavailableException);
@@ -90,12 +91,12 @@ public class DVBServer {
         return settings;
     }
 
-    public TransportStreamProviderFactory<?> getTspProviderFactory() {
-        return tspProviderFactory;
+    public StreamController getStreamController() {
+        return streamController;
     }
 
-    public StreamController getVideoController() {
-        return videoController;
+    public TransportStreamProviderFactory<?> getTspProviderFactory() {
+        return tspProviderFactory;
     }
 
     public void start(String host, int port) {
