@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
@@ -61,6 +62,8 @@ public class APIController {
             metadataController.captureEPG(true);
             return null;
         });
+
+        ctx.result("Scan started");
     }
 
     private void authorize(Context ctx) throws UnauthorizedException {
