@@ -15,6 +15,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,8 +25,11 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
+
 import com.google.gson.Gson;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -86,10 +90,17 @@ public class MetadataController {
                         time = timeout - 1;
                         return;
                     }
+                    long dur = server.getSettings().getAdapters().size()
+                            * server.getSettings().metadata.metaCaptureTimeout * 1000;
+                    server.getLogger().info("Starting scheduled metadata capture. Estimated end: "
+                            + DVBServer.DATE_FORMAT.format(new Date(System.currentTimeMillis() + dur)));
                     if (!captureEPG())
                         time = timeout - 1;
-                    else
+                    else {
                         time = 0;
+                        server.getLogger().info("Metadata capture finished. Next capture: " + DVBServer.DATE_FORMAT
+                                .format(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(timeout))));
+                    }
                 }
             }
         }, 0, TimeUnit.MINUTES.toMillis(1));
@@ -178,6 +189,7 @@ public class MetadataController {
         server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(M3U_MIME);
         ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title, format));
+        server.logClientActivity(ctx, ctx.path());
     }
 
     @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.txt", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
@@ -186,6 +198,7 @@ public class MetadataController {
         server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(ContentType.TEXT_PLAIN);
         ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(null, format));
+        server.logClientActivity(ctx, ctx.path());
     }
 
     @OpenApi(tags = "Metadata", path = "/meta/epg.xml", methods = HttpMethod.GET, responses = {
@@ -195,6 +208,7 @@ public class MetadataController {
         String xmltv = ElectronicProgramGuide.generateXmlTV(epg);
         ctx.contentType(ContentType.XML);
         ctx.result(xmltv);
+        server.logClientActivity(ctx, ctx.path());
     }
 
     @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.xspf", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
@@ -203,6 +217,7 @@ public class MetadataController {
         server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(XSPF_MIME);
         ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title, format));
+        server.logClientActivity(ctx, ctx.path());
     }
 
     private Map<String, List<FriendlyEvent>> getOrCached(AdapterInfo adapter, File file, boolean ignoreCache)

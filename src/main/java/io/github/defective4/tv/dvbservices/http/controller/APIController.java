@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
@@ -41,6 +42,7 @@ public class APIController {
     public void getEPG(Context ctx) throws UnauthorizedException {
         authorizeR(ctx);
         ctx.json(new EPG(server.getMetadataController().getEpg()));
+        server.logClientActivity(ctx, ctx.path());
     }
 
     @OpenApi(tags = "API", path = "/api/metadata/services", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get a list of services", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = APIServices.class, mimeType = ContentType.JSON)))
@@ -52,6 +54,7 @@ public class APIController {
         table.entrySet().forEach(t -> services.put(t.getKey(), t.getValue().freq()));
 
         ctx.json(new APIServices(services));
+        server.logClientActivity(ctx, ctx.path());
     }
 
     @OpenApi(tags = "API", path = "/api/metadata/epg", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get adapter status", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = APIStatus.class, mimeType = ContentType.JSON)))
@@ -59,6 +62,7 @@ public class APIController {
         authorizeR(ctx);
         ctx.json(new APIStatus(server.getStreamController().isWatching() ? AdapterState.WATCHING
                 : server.getMetadataController().isDumping() ? AdapterState.CAPTURING_EPG : AdapterState.AVAILABLE));
+        server.logClientActivity(ctx, ctx.path());
     }
 
     @OpenApi(tags = "API", path = "/api/metadata/scanner", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.POST, summary = "Control metadata scanner", responses = @OpenApiResponse(status = "200"), formParams = @OpenApiParam(allowEmptyValue = false, required = true, type = ScannerAction.class, name = "action", example = "SCAN"))
@@ -78,6 +82,7 @@ public class APIController {
             case DISABLE -> toggleMetadataScanner(ctx, false);
             default -> {}
         }
+        server.logClientActivity(ctx, ctx.path());
     }
 
     private void authorize(Context ctx) throws UnauthorizedException {
@@ -116,6 +121,7 @@ public class APIController {
         });
 
         ctx.result("Scan started");
+        server.logClientActivity(ctx, "Manual metadata scan started");
     }
 
     private void toggleMetadataScanner(Context ctx, boolean enable) throws NotFoundException {

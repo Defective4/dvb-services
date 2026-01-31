@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
@@ -101,6 +102,8 @@ public class StreamController {
                 OutputStream out = ctx.outputStream()) {
             this.provider = provider;
 
+            server.logClientActivity(ctx, String.format("Started streaming service %s with format %s", service, fmt));
+
             if (fmt.isVideo()) {
                 byte[] data = new byte[1024];
                 int read;
@@ -119,6 +122,7 @@ public class StreamController {
             }
         } finally {
             provider = null;
+            server.logClientActivity(ctx, String.format("Stopped streaming service %s with format %s", service, fmt));
         }
     }
 

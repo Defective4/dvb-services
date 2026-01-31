@@ -2,6 +2,7 @@ package io.github.defective4.tv.dvbservices;
 
 import java.util.Map;
 import java.util.Map.Entry;
+
 import io.github.defective4.tv.dvbservices.util.HashUtil;
 
 public record AdapterInfo(String driver, Map<String, String> options, float frequency, String... args) {

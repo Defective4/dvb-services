@@ -1,5 +1,6 @@
 package io.github.defective4.tv.dvbservices.http.controller;
 
+import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
@@ -8,6 +9,12 @@ import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 
 public class ExceptionController {
+
+    private final DVBServer server;
+
+    public ExceptionController(DVBServer server) {
+        this.server = server;
+    }
 
     public void handleAdapterUnavailableException(AdapterUnavailableException ex, Context ctx) {
         simpleResponse(ctx, ex, HttpStatus.SERVICE_UNAVAILABLE);
@@ -33,8 +40,9 @@ public class ExceptionController {
         simpleResponse(ctx, ex, HttpStatus.UNAUTHORIZED);
     }
 
-    private static void simpleResponse(Context ctx, Exception ex, HttpStatus status) {
+    private void simpleResponse(Context ctx, Exception ex, HttpStatus status) {
         ctx.result(ex.getMessage());
         ctx.status(status);
+        server.logClientError(ctx, ctx.path());
     }
 }

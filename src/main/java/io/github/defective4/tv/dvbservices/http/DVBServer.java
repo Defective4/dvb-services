@@ -3,6 +3,13 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import org.slf4j.Logger;
+import org.slf4j.simple.SimpleLoggerFactory;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -17,17 +24,21 @@ import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
+import io.javalin.http.Context;
 import io.javalin.json.JavalinGson;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 
 public class DVBServer {
+    public static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
     private final APIController apiController;
-    private final ExceptionController exceptionController = new ExceptionController();
+    private final ExceptionController exceptionController = new ExceptionController(this);
     private final Javalin javalin;
+    private final Logger logger = new SimpleLoggerFactory().getLogger("dvb-server");
     private final MetadataController metadataController;
     private final ServerSettings settings;
     private final StreamController streamController;
+
     private final TransportStreamProviderFactory<?> tspProviderFactory;
 
     public DVBServer(ServerSettings settings) {
@@ -100,6 +111,10 @@ public class DVBServer {
         javalin.exception(APIReadOnlyException.class, exceptionController::handleAPIReadOnlyException);
     }
 
+    public Logger getLogger() {
+        return logger;
+    }
+
     public MetadataController getMetadataController() {
         return metadataController;
     }
@@ -114,6 +129,14 @@ public class DVBServer {
 
     public TransportStreamProviderFactory<?> getTspProviderFactory() {
         return tspProviderFactory;
+    }
+
+    public void logClientActivity(Context ctx, String msg) {
+        logger.info(String.format("[%s] [%s] %s", ctx.ip(), ctx.statusCode(), msg));
+    }
+
+    public void logClientError(Context ctx, String msg) {
+        logger.warn(String.format("[%s] [%s] %s", ctx.ip(), ctx.statusCode(), msg));
     }
 
     public void start(String host, int port) {
