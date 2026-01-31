@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 
 public class FFMpeg implements AutoCloseable {
@@ -19,7 +18,7 @@ public class FFMpeg implements AutoCloseable {
     private static final String VERESION_STRING = "ffmpeg version ";
     private final String ffmpegPath;
     private Process process;
-    private final ExecutorService service = Executors.newSingleThreadExecutor();
+    private final ExecutorService service = Executors.newFixedThreadPool(2);
 
     public FFMpeg(String ffmpegPath) {
         this.ffmpegPath = ffmpegPath;
@@ -35,38 +34,41 @@ public class FFMpeg implements AutoCloseable {
         process.waitFor();
     }
 
-    public void convertToMP3(InputStream from, OutputStream to, MediaFormat fmt, String... opts)
+    public void convert(InputStream from, OutputStream to, MediaFormat fmt, String... opts)
             throws IOException, InterruptedException, ExecutionException {
         if (process != null) throw new IllegalStateException("Converter already started");
 
         List<String> args = new ArrayList<>(List.of(ffmpegPath, "-i", "-", "-f", fmt.name().toLowerCase()));
         if (opts != null && opts.length > 0) Collections.addAll(args, opts);
+        Collections.addAll(args, fmt.getFFmpegArgs());
         args.add("-");
 
         process = ProcessUtils.start(args.toArray(new String[0]));
 
         Future<Boolean> task = service.submit(() -> {
-            byte[] buffer = new byte[1024];
-            int read;
             try (InputStream fi = process.getInputStream()) {
-                while (true) {
-                    read = fi.read(buffer);
-                    if (read < 0) break;
-                    to.write(buffer, 0, read);
-                }
+                copyStream(fi, to);
             } catch (IOException e) {}
             return true;
         });
 
-        byte[] buffer = new byte[1024];
-        int read;
-        try (OutputStream fo = process.getOutputStream()) {
-            while (true) {
-                read = from.read(buffer);
-                if (read < 0) break;
-                fo.write(buffer, 0, read);
-            }
-        } catch (IOException e) {}
+        if (fmt.requiresIntermediate()) {
+            Process wav = ProcessUtils.start(ffmpegPath, "-i", "-", "-f", "wav", "-");
+            Future<Boolean> subtask = service.submit(() -> {
+                try (OutputStream so = wav.getOutputStream()) {
+                    copyStream(from, so);
+                } catch (IOException e) {}
+                return true;
+            });
+            try (OutputStream fo = process.getOutputStream()) {
+                copyStream(wav.getInputStream(), fo);
+            } catch (IOException e) {}
+            subtask.get();
+        } else {
+            try (OutputStream fo = process.getOutputStream()) {
+                copyStream(from, fo);
+            } catch (IOException e) {}
+        }
 
         task.get();
     }
@@ -76,6 +78,16 @@ public class FFMpeg implements AutoCloseable {
         try (BufferedReader reader = proc.inputReader()) {
             String line = reader.readLine();
             return line != null && line.startsWith(VERESION_STRING);
+        }
+    }
+
+    private static void copyStream(InputStream from, OutputStream fo) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while (true) {
+            read = from.read(buffer);
+            if (read < 0) break;
+            fo.write(buffer, 0, read);
         }
     }
 

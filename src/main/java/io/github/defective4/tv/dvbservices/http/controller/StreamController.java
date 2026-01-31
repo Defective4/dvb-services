@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
@@ -115,7 +114,7 @@ public class StreamController {
             } else {
                 try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
                     String opts = server.getSettings().server.audio.ffmpegOpts;
-                    ffmpeg.convertToMP3(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
+                    ffmpeg.convert(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
                     ffmpeg.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
