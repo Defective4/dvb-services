@@ -72,6 +72,10 @@ public class ServerSettings {
         public String baseURL = "http://127.0.0.1:8080";
         public Bind bind = new Bind();
         public List<MediaFormat> formats = Arrays.asList(MediaFormat.values());
+
+        public boolean needsTranscoding() {
+            return formats.stream().anyMatch(fmt -> fmt != MediaFormat.TS);
+        }
     }
 
     public static class Tools {

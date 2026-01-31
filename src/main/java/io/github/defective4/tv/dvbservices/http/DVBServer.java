@@ -62,17 +62,21 @@ public class DVBServer {
             throw e;
         }
         logger.info("Provider " + providerName + " OK");
-        try (FFMpeg ffmpeg = new FFMpeg(settings.tools.ffmpegPath)) {
-            logger.info("Checking ffmpeg");
-            if (!ffmpeg.isAvailable()) {
-                throw new IOException();
+        if (settings.server.needsTranscoding()) {
+            try (FFMpeg ffmpeg = new FFMpeg(settings.tools.ffmpegPath)) {
+                logger.info("Some media formats need transcording. Checking for ffmpeg");
+                if (!ffmpeg.isAvailable()) {
+                    throw new IOException();
+                }
+            } catch (IOException ex) {
+                settings.server.formats = settings.server.formats.stream().filter(e -> e == MediaFormat.TS).toList();
+                logger.warn("ffmpeg (" + settings.tools.ffmpegPath
+                        + ") is not available. All media formats other than TS are disabled");
             }
-        } catch (IOException ex) {
-            settings.server.formats = settings.server.formats.stream().filter(e -> e == MediaFormat.TS).toList();
-            logger.warn("ffmpeg (" + settings.tools.ffmpegPath
-                    + ") is not available. All media formats other than TS are disabled");
+            logger.info("ffmpeg OK");
+        } else {
+            logger.info("No transcoding need, ffmpeg check skipped");
         }
-        logger.info("ffmpeg OK");
         streamController = new StreamController(this);
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         apiController = new APIController(this);
