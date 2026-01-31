@@ -1,0 +1,15 @@
+name: dvb-services
+
+services:
+  server:
+    image: dvb-services:latest
+    ports: 
+      - 8080:8080
+    volumes:
+      - ./data:/opt/svc/data
+      - ./cache:/opt/svc/cache
+#   Uncomment the following lines if you want to use a hardware USB tuner
+#      - type: bind
+#        source: /dev/bus/usb
+#        target: /dev/bus/usb
+#    privileged: true
