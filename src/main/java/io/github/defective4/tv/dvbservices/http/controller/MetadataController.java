@@ -24,11 +24,8 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import com.google.gson.Gson;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
@@ -44,6 +41,11 @@ import io.github.defective4.tv.dvbservices.util.HashUtil;
 import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiResponse;
 import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
 
 public class MetadataController {
@@ -170,18 +172,24 @@ public class MetadataController {
         return isDumping;
     }
 
+    @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.m3u", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
+            @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = M3U_MIME)) })
     public void serveM3U(Context ctx, String title, MediaFormat format) throws NotFoundException {
         server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(M3U_MIME);
         ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title, format));
     }
 
+    @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.txt", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
+            @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.PLAIN)) })
     public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException, NotFoundException {
         server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(ContentType.TEXT_PLAIN);
         ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(null, format));
     }
 
+    @OpenApi(tags = "Metadata", path = "/meta/epg.xml", methods = HttpMethod.GET, responses = {
+            @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.XML)) })
     public void serveXMLTV(Context ctx) throws TransformerException, NotFoundException {
         server.getSettings().metadata.checkMetaCapture();
         String xmltv = ElectronicProgramGuide.generateXmlTV(epg);
@@ -189,6 +197,8 @@ public class MetadataController {
         ctx.result(xmltv);
     }
 
+    @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.xspf", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
+            @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.PLAIN)) })
     public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException, NotFoundException {
         server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(XSPF_MIME);

@@ -16,6 +16,10 @@ import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.javalin.http.Context;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiResponse;
 
 public class StreamController {
     private TransportStreamProvider provider;
@@ -30,6 +34,9 @@ public class StreamController {
         return provider != null;
     }
 
+    @OpenApi(methods = HttpMethod.GET, path = "/stream/{service}", pathParams = @OpenApiParam(allowEmptyValue = false, example = "TVP1.ts", description = "Service name along with media extension", required = true, name = "service"), summary = "Stream a TV service", tags = "Stream", responses = {
+            @OpenApiResponse(description = "Media stream with undefined length", status = "200"),
+            @OpenApiResponse(status = "404"), @OpenApiResponse(status = "500") })
     public void serveVideo(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
         if (!server.getSettings().metadata.enableMetaCapture)
             throw new NotFoundException("Server has metadata capture disabled, use the frequency+service endpoint.");
@@ -43,6 +50,12 @@ public class StreamController {
         serveService(ctx, service, adapter, type);
     }
 
+    @OpenApi(methods = HttpMethod.GET, path = "/stream/{frequency}/{service}", pathParams = {
+            @OpenApiParam(allowEmptyValue = false, example = "TVP1.ts", description = "Service name along with media extension", required = true, name = "service"),
+            @OpenApiParam(allowEmptyValue = false, example = "538000000", description = "Frequency (Hz) of the service", required = true, name = "frequency", type = int.class) }, summary = "Stream a TV service", tags = "Stream", responses = {
+                    @OpenApiResponse(description = "Media stream with undefined length", status = "200"),
+                    @OpenApiResponse(status = "404"), @OpenApiResponse(status = "400"),
+                    @OpenApiResponse(status = "500") })
     public void serveVideoExact(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
         checkAvailable();
         Entry<String, String> entry = getService(ctx);

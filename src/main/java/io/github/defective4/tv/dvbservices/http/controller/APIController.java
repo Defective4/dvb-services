@@ -16,7 +16,14 @@ import io.github.defective4.tv.dvbservices.http.model.APIStatus;
 import io.github.defective4.tv.dvbservices.http.model.AdapterState;
 import io.github.defective4.tv.dvbservices.http.model.EPG;
 import io.github.defective4.tv.dvbservices.http.model.ScannerAction;
+import io.javalin.http.ContentType;
 import io.javalin.http.Context;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiResponse;
+import io.javalin.openapi.OpenApiSecurity;
 
 public class APIController {
 
@@ -30,11 +37,13 @@ public class APIController {
         server = dvbServer;
     }
 
+    @OpenApi(tags = "API", path = "/api/metadata/epg", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get current EPG", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = EPG.class, mimeType = ContentType.JSON)))
     public void getEPG(Context ctx) throws UnauthorizedException {
         authorizeR(ctx);
         ctx.json(new EPG(server.getMetadataController().getEpg()));
     }
 
+    @OpenApi(tags = "API", path = "/api/metadata/services", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get a list of services", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = APIServices.class, mimeType = ContentType.JSON)))
     public void getServices(Context ctx) throws UnauthorizedException, NotFoundException {
         server.getSettings().metadata.checkMetaCapture();
         authorizeR(ctx);
@@ -45,12 +54,14 @@ public class APIController {
         ctx.json(new APIServices(services));
     }
 
+    @OpenApi(tags = "API", path = "/api/metadata/epg", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get adapter status", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = APIStatus.class, mimeType = ContentType.JSON)))
     public void getStatus(Context ctx) throws UnauthorizedException {
         authorizeR(ctx);
         ctx.json(new APIStatus(server.getStreamController().isWatching() ? AdapterState.WATCHING
                 : server.getMetadataController().isDumping() ? AdapterState.CAPTURING_EPG : AdapterState.AVAILABLE));
     }
 
+    @OpenApi(tags = "API", path = "/api/metadata/scanner", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.POST, summary = "Control metadata scanner", responses = @OpenApiResponse(status = "200"), formParams = @OpenApiParam(allowEmptyValue = false, required = true, type = ScannerAction.class, name = "action", example = "SCAN"))
     public void handleScanner(Context ctx)
             throws UnauthorizedException, APIReadOnlyException, AdapterUnavailableException, NotFoundException {
         String act = ctx.formParam("action");

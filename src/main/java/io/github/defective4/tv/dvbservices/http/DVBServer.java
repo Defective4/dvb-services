@@ -3,7 +3,6 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
-
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -19,6 +18,8 @@ import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinGson;
+import io.javalin.openapi.plugin.OpenApiPlugin;
+import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 
 public class DVBServer {
     private final APIController apiController;
@@ -36,6 +37,20 @@ public class DVBServer {
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
+            cfg.registerPlugin(new OpenApiPlugin(ocfg -> {
+                ocfg.withDefinitionConfiguration((t, dcfg) -> {
+                    dcfg.withInfo(icfg -> {
+                        icfg.contact("Defective4", "https://github.com/Defective4/dvb-services",
+                                "def3ctive4@gmail.com");
+                        icfg.license("MIT");
+                        icfg.version("1.0");
+                        icfg.title("DVB Services API");
+                    });
+                    dcfg.withSecurity(scfg -> scfg.withBearerAuth("token"));
+                    dcfg.withServer(scfg -> scfg.url(settings.server.baseURL));
+                });
+            }));
+            cfg.registerPlugin(new SwaggerPlugin());
             cfg.jsonMapper(new JavalinGson());
             cfg.router.apiBuilder(() -> {
                 for (Playlist ps : settings.metadata.playlists) {
