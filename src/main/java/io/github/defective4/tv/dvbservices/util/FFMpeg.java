@@ -40,7 +40,7 @@ public class FFMpeg implements AutoCloseable {
         if (process != null) throw new IllegalStateException("Converter already started");
 
         List<String> args = new ArrayList<>(List.of(ffmpegPath, "-i", "-", "-f", fmt.name().toLowerCase()));
-        if (opts != null) Collections.addAll(args, opts);
+        if (opts != null && opts.length > 0) Collections.addAll(args, opts);
         args.add("-");
 
         process = ProcessUtils.start(args.toArray(new String[0]));

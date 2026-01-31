@@ -114,7 +114,8 @@ public class StreamController {
                 }
             } else {
                 try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
-                    ffmpeg.convertToMP3(in, out, fmt, server.getSettings().server.audio.ffmpegOpts.split(" "));
+                    String opts = server.getSettings().server.audio.ffmpegOpts;
+                    ffmpeg.convertToMP3(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
                     ffmpeg.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
