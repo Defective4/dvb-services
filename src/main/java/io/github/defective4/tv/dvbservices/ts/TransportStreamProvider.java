@@ -16,4 +16,8 @@ public abstract class TransportStreamProvider implements AutoCloseable {
     public abstract void close() throws IOException;
 
     public abstract void dumpPSI(AdapterInfo adapter, File target, long timeout) throws IOException;
+
+    public abstract String getFullName();
+
+    public abstract boolean isAvailable() throws IOException;
 }

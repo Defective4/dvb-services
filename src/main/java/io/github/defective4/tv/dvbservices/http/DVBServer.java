@@ -4,6 +4,7 @@ import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -20,9 +21,11 @@ import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
+import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
+import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.json.JavalinGson;
@@ -41,9 +44,35 @@ public class DVBServer {
 
     private final TransportStreamProviderFactory<?> tspProviderFactory;
 
-    public DVBServer(ServerSettings settings) {
+    public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
+        String providerName = null;
+        try (TransportStreamProvider provider = tspProviderFactory.create()) {
+            providerName = provider.getFullName();
+            logger.info("Checking transport stream provider availability");
+            if (!provider.isAvailable()) {
+                throw new IOException();
+            }
+        } catch (IOException e) {
+            logger.error(String.format(
+                    "Transport Stream provider %s is not available. The server can't process streams without it.",
+                    providerName));
+            System.exit(5);
+            throw e;
+        }
+        logger.info("Provider " + providerName + " OK");
+        try (FFMpeg ffmpeg = new FFMpeg(settings.tools.ffmpegPath)) {
+            logger.info("Checking ffmpeg");
+            if (!ffmpeg.isAvailable()) {
+                throw new IOException();
+            }
+        } catch (IOException ex) {
+            settings.server.formats = settings.server.formats.stream().filter(e -> e == MediaFormat.TS).toList();
+            logger.warn("ffmpeg (" + settings.tools.ffmpegPath
+                    + ") is not available. All media formats other than TS are disabled");
+        }
+        logger.info("ffmpeg OK");
         streamController = new StreamController(this);
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         apiController = new APIController(this);
@@ -141,5 +170,6 @@ public class DVBServer {
 
     public void start(String host, int port) {
         javalin.start(host, port);
+        metadataController.schedule();
     }
 }

@@ -1,5 +1,6 @@
 package io.github.defective4.tv.dvbservices.util;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,6 +16,7 @@ import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 
 public class FFMpeg implements AutoCloseable {
 
+    private static final String VERESION_STRING = "ffmpeg version ";
     private final String ffmpegPath;
     private Process process;
     private final ExecutorService service = Executors.newSingleThreadExecutor();
@@ -67,6 +69,14 @@ public class FFMpeg implements AutoCloseable {
         } catch (IOException e) {}
 
         task.get();
+    }
+
+    public boolean isAvailable() throws IOException {
+        Process proc = ProcessUtils.start(ffmpegPath, "-version");
+        try (BufferedReader reader = proc.inputReader()) {
+            String line = reader.readLine();
+            return line != null && line.startsWith(VERESION_STRING);
+        }
     }
 
 }

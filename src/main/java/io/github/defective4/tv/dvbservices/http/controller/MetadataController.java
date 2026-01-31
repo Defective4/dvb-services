@@ -73,37 +73,6 @@ public class MetadataController {
         this.baseURL = baseURL;
         this.adapters = Collections.unmodifiableList(adapters);
         this.server = server;
-        timer.scheduleAtFixedRate(new TimerTask() {
-
-            private int time;
-            private final int timeout = server.getSettings().metadata.metaCaptureIntervalMinutes;
-
-            {
-                time = timeout;
-            }
-
-            @Override
-            public void run() {
-                time++;
-                if (time >= timeout) {
-                    if (!server.getSettings().metadata.scheduleMetaCapture) {
-                        time = timeout - 1;
-                        return;
-                    }
-                    long dur = server.getSettings().getAdapters().size()
-                            * server.getSettings().metadata.metaCaptureTimeout * 1000;
-                    server.getLogger().info("Starting scheduled metadata capture. Estimated end: "
-                            + DVBServer.DATE_FORMAT.format(new Date(System.currentTimeMillis() + dur)));
-                    if (!captureEPG())
-                        time = timeout - 1;
-                    else {
-                        time = 0;
-                        server.getLogger().info("Metadata capture finished. Next capture: " + DVBServer.DATE_FORMAT
-                                .format(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(timeout))));
-                    }
-                }
-            }
-        }, 0, TimeUnit.MINUTES.toMillis(1));
     }
 
     public boolean captureEPG() {
@@ -181,6 +150,40 @@ public class MetadataController {
 
     public boolean isDumping() {
         return isDumping;
+    }
+
+    public void schedule() {
+        timer.scheduleAtFixedRate(new TimerTask() {
+
+            private int time;
+            private final int timeout = server.getSettings().metadata.metaCaptureIntervalMinutes;
+
+            {
+                time = timeout;
+            }
+
+            @Override
+            public void run() {
+                time++;
+                if (time >= timeout) {
+                    if (!server.getSettings().metadata.scheduleMetaCapture) {
+                        time = timeout - 1;
+                        return;
+                    }
+                    long dur = server.getSettings().getAdapters().size()
+                            * server.getSettings().metadata.metaCaptureTimeout * 1000;
+                    server.getLogger().info("Starting scheduled metadata capture. Estimated end: "
+                            + DVBServer.DATE_FORMAT.format(new Date(System.currentTimeMillis() + dur)));
+                    if (!captureEPG())
+                        time = timeout - 1;
+                    else {
+                        time = 0;
+                        server.getLogger().info("Metadata capture finished. Next capture: " + DVBServer.DATE_FORMAT
+                                .format(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(timeout))));
+                    }
+                }
+            }
+        }, 0, TimeUnit.MINUTES.toMillis(1));
     }
 
     @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.m3u", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {

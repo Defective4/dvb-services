@@ -1,5 +1,6 @@
 package io.github.defective4.tv.dvbservices.ts.external;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +17,7 @@ import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
 public class TSDuckProvider extends TransportStreamProvider {
 
+    private static final String VERSION_STRING = "tsp: TSDuck - The MPEG Transport Stream Toolkit";
     private Process process;
     private final String tspExecutable;
 
@@ -58,6 +60,20 @@ public class TSDuckProvider extends TransportStreamProvider {
         try {
             process.waitFor(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {}
+    }
+
+    @Override
+    public String getFullName() {
+        return "tsduck (" + tspExecutable + ")";
+    }
+
+    @Override
+    public boolean isAvailable() throws IOException {
+        Process proc = ProcessUtils.start(tspExecutable, "--version");
+        try (BufferedReader reader = new BufferedReader(proc.errorReader())) {
+            String line = reader.readLine();
+            return line != null && line.startsWith(VERSION_STRING);
+        }
     }
 
     private void checkUsed() {
