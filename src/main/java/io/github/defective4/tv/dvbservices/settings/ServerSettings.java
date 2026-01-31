@@ -64,7 +64,7 @@ public class ServerSettings {
         }
 
         public static class Bind {
-            public String host = "127.0.0.1";
+            public String host = "0.0.0.0";
             public int port = 8080;
         }
 
@@ -79,7 +79,8 @@ public class ServerSettings {
         public String tspPath = "tsp";
     }
 
-    public final List<AdapterInfo> adapters = List.of(new AdapterInfo("file", Map.of(), 538e6f, "/tmp/tv.ts"));
+    public final List<AdapterInfo> adapters = List
+            .of(new AdapterInfo("dvb", Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), 538e6f));
     public API api = new API();
     public Cache cache = new Cache();
     public Metadata metadata = new Metadata();
