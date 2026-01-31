@@ -31,6 +31,8 @@ public class StreamController {
     }
 
     public void serveVideo(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
+        if (!server.getSettings().metadata.enableMetaCapture)
+            throw new NotFoundException("Server has metadata capture disabled, use the frequency+service endpoint.");
         checkAvailable();
         Entry<String, String> serviceEntry = getService(ctx);
         String service = serviceEntry.getKey();

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import io.github.defective4.tv.dvbservices.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
@@ -44,10 +45,16 @@ public class ServerSettings {
             }
         }
 
-        public int epgCaptureTimeout = 30;
-        public int epgRefreshIntervalMinutes = 1440;
+        public boolean enableMetaCapture = true;
+        public int metaCaptureIntervalMinutes = 1440;
+        public int metaCaptureTimeout = 30;
         public List<Playlist> playlists = List.of(new Playlist(PlaylistType.M3U), new Playlist(PlaylistType.XSPF));
+        public boolean scheduleMetaCapture = true;
         public boolean serveXMLTV = true;
+
+        public void checkMetaCapture() throws NotFoundException {
+            if (!enableMetaCapture) throw new NotFoundException("Metadata capture is disabled on this server");
+        }
     }
 
     public static class Server {

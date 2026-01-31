@@ -24,12 +24,16 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
+
 import com.google.gson.Gson;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
+import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
@@ -64,19 +68,39 @@ public class MetadataController {
         this.adapters = Collections.unmodifiableList(adapters);
         this.server = server;
         timer.scheduleAtFixedRate(new TimerTask() {
+
+            private int time;
+            private final int timeout = server.getSettings().metadata.metaCaptureIntervalMinutes;
+
+            {
+                time = timeout;
+            }
+
             @Override
             public void run() {
-                captureEPG();
+                time++;
+                if (time >= timeout) {
+                    if (!server.getSettings().metadata.scheduleMetaCapture) {
+                        time = timeout - 1;
+                        return;
+                    }
+                    if (!captureEPG())
+                        time = timeout - 1;
+                    else
+                        time = 0;
+                }
             }
-        }, 0, TimeUnit.MINUTES.toMillis(server.getSettings().metadata.epgRefreshIntervalMinutes));
+        }, 0, TimeUnit.MINUTES.toMillis(1));
     }
 
-    public void captureEPG() {
-        captureEPG(false);
+    public boolean captureEPG() {
+        return captureEPG(false);
     }
 
-    public void captureEPG(boolean ignoreCache) {
-        if (server.getStreamController().isWatching() || isDumping()) return;
+    public boolean captureEPG(boolean ignoreCache) {
+        if (server.getStreamController().isWatching() || isDumping()
+                || !server.getSettings().metadata.enableMetaCapture)
+            return false;
         isDumping = true;
         dumpingProgress = 0;
         try {
@@ -91,7 +115,7 @@ public class MetadataController {
                     files.put(adapter, file);
 
                     ts.dumpPSI(adapter, file,
-                            TimeUnit.SECONDS.toMillis(server.getSettings().metadata.epgCaptureTimeout));
+                            TimeUnit.SECONDS.toMillis(server.getSettings().metadata.metaCaptureTimeout));
                     dumpingProgress++;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -115,6 +139,7 @@ public class MetadataController {
         } finally {
             isDumping = false;
         }
+        return true;
     }
 
     public List<AdapterInfo> getAdapters() {
@@ -145,23 +170,27 @@ public class MetadataController {
         return isDumping;
     }
 
-    public void serveM3U(Context ctx, String title, MediaFormat format) {
+    public void serveM3U(Context ctx, String title, MediaFormat format) throws NotFoundException {
+        server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(M3U_MIME);
         ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title, format));
     }
 
-    public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException {
+    public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException, NotFoundException {
+        server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(ContentType.TEXT_PLAIN);
         ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(null, format));
     }
 
-    public void serveXMLTV(Context ctx) throws TransformerException {
+    public void serveXMLTV(Context ctx) throws TransformerException, NotFoundException {
+        server.getSettings().metadata.checkMetaCapture();
         String xmltv = ElectronicProgramGuide.generateXmlTV(epg);
         ctx.contentType(ContentType.XML);
         ctx.result(xmltv);
     }
 
-    public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException {
+    public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException, NotFoundException {
+        server.getSettings().metadata.checkMetaCapture();
         ctx.contentType(XSPF_MIME);
         ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title, format));
     }

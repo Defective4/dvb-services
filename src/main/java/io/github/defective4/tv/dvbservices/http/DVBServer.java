@@ -2,7 +2,7 @@ package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
-
+import static io.javalin.apibuilder.ApiBuilder.post;
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -68,7 +68,7 @@ public class DVBServer {
                         get("/status", apiController::getStatus);
                         get("/services", apiController::getServices);
                         path("/metadata", () -> {
-                            get("scan", apiController::scanEPG);
+                            post("scanner", apiController::handleScanner);
                             get("epg", apiController::getEPG);
                         });
                     });
