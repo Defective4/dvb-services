@@ -8,14 +8,13 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
+import io.github.defective4.tv.dvbservices.media.MediaConverter;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
-import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
@@ -113,10 +112,10 @@ public class StreamController {
                     out.write(data, 0, read);
                 }
             } else {
-                try (FFMpeg ffmpeg = new FFMpeg(server.getSettings().tools.ffmpegPath)) {
+                try (MediaConverter converter = server.getMediaConverterFactory().create()) {
                     String opts = server.getSettings().server.audio.ffmpegOpts;
-                    ffmpeg.convert(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
-                    ffmpeg.closePeacefully();
+                    converter.convert(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
+                    converter.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 }

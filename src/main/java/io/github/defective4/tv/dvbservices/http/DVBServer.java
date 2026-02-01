@@ -3,14 +3,11 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
-
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
-
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -19,13 +16,15 @@ import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
+import io.github.defective4.tv.dvbservices.media.FFMpeg;
+import io.github.defective4.tv.dvbservices.media.MediaConverter;
+import io.github.defective4.tv.dvbservices.media.MediaConverterFactory;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
-import io.github.defective4.tv.dvbservices.util.FFMpeg;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.json.JavalinGson;
@@ -38,15 +37,17 @@ public class DVBServer {
     private final ExceptionController exceptionController = new ExceptionController(this);
     private final Javalin javalin;
     private final Logger logger = new SimpleLoggerFactory().getLogger("dvb-server");
+    private final MediaConverterFactory<?> mediaConverterFactory;
     private final MetadataController metadataController;
     private final ServerSettings settings;
-    private final StreamController streamController;
 
+    private final StreamController streamController;
     private final TransportStreamProviderFactory<?> tspProviderFactory;
 
     public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
+        mediaConverterFactory = FFMpeg.factory(settings.tools.ffmpegPath);
         String providerName = null;
         try (TransportStreamProvider provider = tspProviderFactory.create()) {
             providerName = provider.getFullName();
@@ -63,9 +64,9 @@ public class DVBServer {
         }
         logger.info("Provider " + providerName + " OK");
         if (settings.server.needsTranscoding()) {
-            try (FFMpeg ffmpeg = new FFMpeg(settings.tools.ffmpegPath)) {
+            try (MediaConverter conv = mediaConverterFactory.create()) {
                 logger.info("Some media formats need transcording. Checking for ffmpeg");
-                if (!ffmpeg.isAvailable()) {
+                if (!conv.isAvailable()) {
                     throw new IOException();
                 }
             } catch (IOException ex) {
@@ -146,6 +147,10 @@ public class DVBServer {
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public MediaConverterFactory<?> getMediaConverterFactory() {
+        return mediaConverterFactory;
     }
 
     public MetadataController getMetadataController() {

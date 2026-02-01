@@ -1,4 +1,4 @@
-package io.github.defective4.tv.dvbservices.util;
+package io.github.defective4.tv.dvbservices.media;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,17 +11,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
+import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
-public class FFMpeg implements AutoCloseable {
+public class FFMpeg implements MediaConverter {
 
     private static final String VERESION_STRING = "ffmpeg version ";
     private final String ffmpegPath;
     private Process process;
     private final ExecutorService service = Executors.newFixedThreadPool(2);
 
-    public FFMpeg(String ffmpegPath) {
+    private FFMpeg(String ffmpegPath) {
         this.ffmpegPath = ffmpegPath;
     }
 
@@ -31,10 +31,12 @@ public class FFMpeg implements AutoCloseable {
         if (process != null) process.destroyForcibly();
     }
 
+    @Override
     public void closePeacefully() throws InterruptedException {
         process.waitFor();
     }
 
+    @Override
     public void convert(InputStream from, OutputStream to, MediaFormat fmt, String... opts)
             throws IOException, InterruptedException, ExecutionException {
         if (process != null) throw new IllegalStateException("Converter already started");
@@ -74,12 +76,17 @@ public class FFMpeg implements AutoCloseable {
         task.get();
     }
 
+    @Override
     public boolean isAvailable() throws IOException {
         Process proc = ProcessUtils.start(ffmpegPath, "-version");
         try (BufferedReader reader = proc.inputReader()) {
             String line = reader.readLine();
             return line != null && line.startsWith(VERESION_STRING);
         }
+    }
+
+    public static MediaConverterFactory<FFMpeg> factory(String ffmpegPath) {
+        return () -> new FFMpeg(ffmpegPath);
     }
 
     private static void copyStream(InputStream from, OutputStream fo) throws IOException {
