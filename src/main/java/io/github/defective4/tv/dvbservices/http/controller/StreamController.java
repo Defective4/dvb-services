@@ -113,7 +113,7 @@ public class StreamController {
                 }
             } else {
                 try (MediaConverter converter = server.getMediaConverterFactory().create()) {
-                    String opts = server.getSettings().server.audio.ffmpegOpts;
+                    String opts = server.getSettings().server.audio.converterParams;
                     converter.convert(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
                     converter.closePeacefully();
                 } catch (InterruptedException | ExecutionException e) {

@@ -16,6 +16,7 @@ import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
+import io.github.defective4.tv.dvbservices.media.FFMpeg;
 import io.github.defective4.tv.dvbservices.media.MediaConverter;
 import io.github.defective4.tv.dvbservices.media.MediaConverterFactory;
 import io.github.defective4.tv.dvbservices.media.VLC;
@@ -46,9 +47,17 @@ public class DVBServer {
 
     public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
-        tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
-//        mediaConverterFactory = FFMpeg.factory(settings.tools.ffmpegPath);
-        mediaConverterFactory = VLC.factory("vlc");
+        tspProviderFactory = TSDuckProvider.factory(settings.tools.paths.tspPath);
+        if (settings.tools.mediaConverter == null) {
+            logger.error("Invalid media converter");
+            System.exit(4);
+            throw new IllegalArgumentException();
+        }
+        mediaConverterFactory = switch (settings.tools.mediaConverter) {
+            case FFMPEG -> FFMpeg.factory(settings.tools.paths.ffmpegPath);
+            case VLC -> VLC.factory(settings.tools.paths.vlcPath);
+            default -> throw new IllegalArgumentException();
+        };
         String providerName = null;
         try (TransportStreamProvider provider = tspProviderFactory.create()) {
             providerName = provider.getFullName();

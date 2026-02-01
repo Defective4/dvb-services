@@ -59,7 +59,7 @@ public class ServerSettings {
 
     public static class Server {
         public static class Audio {
-            public String ffmpegOpts = "-aq 2";
+            public String converterParams = "";
         }
 
         public static class Bind {
@@ -78,8 +78,18 @@ public class ServerSettings {
     }
 
     public static class Tools {
-        public String ffmpegPath = "ffmpeg";
-        public String tspPath = "tsp";
+        public static enum ConverterType {
+            FFMPEG, VLC
+        }
+
+        public static class Paths {
+            public String ffmpegPath = "ffmpeg";
+            public String tspPath = "tsp";
+            public String vlcPath = "vlc";
+        }
+
+        public ConverterType mediaConverter = ConverterType.FFMPEG;
+        public Paths paths = new Paths();
     }
 
     public final List<AdapterInfo> adapters = List

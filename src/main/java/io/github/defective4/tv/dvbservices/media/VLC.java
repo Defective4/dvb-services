@@ -34,8 +34,8 @@ public class VLC implements MediaConverter {
             throws IOException, InterruptedException, ExecutionException {
         if (process != null) throw new IllegalStateException("Converter already started");
         process = ProcessUtils.start(vlcPath, "-I", "dummy", "--sout", String.format(
-                "#transcode{vcodec=none,acodec=%s,ab=128,channels=2,samplerate=44100,scodec=none}:file{mux=%s,dst=/dev/stdout}",
-                fmt.getAcodec(), fmt.getMux()), "-");
+                "#transcode{vcodec=none,acodec=%s,channels=2,samplerate=44100,scodec=none%s}:file{mux=%s,dst=/dev/stdout}",
+                fmt.getAcodec(), opts.length == 0 ? "" : "," + String.join(" ", opts), fmt.getMux()), "-");
 
         service.submit(() -> {
             try (OutputStream fo = process.getOutputStream()) {
