@@ -1,3 +1,2 @@
-# dvb-services
-
-A server for EPG and video data for DVB-T dongles 
+# DVB Servicess
+An IPTV server for USB DVB dongles
