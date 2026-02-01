@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,17 +40,12 @@ public class StreamController {
             @OpenApiResponse(status = "404"), @OpenApiResponse(status = "500") })
     public void serveVideo(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
         checkAvailable();
-        Entry<String, String> serviceEntry = getService(ctx);
-        String serviceName = serviceEntry.getKey();
-        TVService service;
+        Entry<TVService, String> serviceEntry = getService(ctx);
+        TVService service = serviceEntry.getKey();
         AdapterInfo adapter;
-        try {
-            MetadataController ctl = server.getMetadataController();
-            service = ctl.getService(serviceName).orElseThrow();
-            adapter = ctl.getServiceAdapter(serviceName).orElseThrow();
-        } catch (NoSuchElementException e) {
-            throw new NotFoundException("Service " + serviceName + " is not available");
-        }
+        MetadataController ctl = server.getMetadataController();
+        adapter = ctl.getServiceAdapter(service)
+                .orElseThrow(() -> new NotFoundException("Service " + service + " is not available"));
         String type = serviceEntry.getValue();
 
         serveService(ctx, service, adapter, type);
@@ -67,17 +61,14 @@ public class StreamController {
         checkAvailable();
         MetadataController ctl = server.getMetadataController();
 
-        Entry<String, String> entry = getService(ctx);
-        String serviceName = entry.getKey();
+        Entry<TVService, String> entry = getService(ctx);
+        TVService service = entry.getKey();
         String type = entry.getValue();
         int frequency = ctx.pathParamAsClass("frequency", int.class)
                 .getOrThrow(arg0 -> new IllegalArgumentException("The frequency must be a valid number"));
 
         AdapterInfo adapter = ctl.getServiceAdapter(frequency)
                 .orElseThrow(() -> new NotFoundException("There is no adapter for this frequency"));
-
-        TVService service = ctl.getService(serviceName)
-                .orElseThrow(() -> new NotFoundException("Service " + serviceName + " is not available"));
 
         serveService(ctx, service, adapter, type);
     }
@@ -93,6 +84,18 @@ public class StreamController {
                     String.format("The server is currently capturing TV metadata. Current progress: %s/%s",
                             mtd.getDumpingProgress(), mtd.getAdapters().size()));
         }
+    }
+
+    private Map.Entry<TVService, String> getService(Context ctx) throws NotFoundException {
+        String serviceName = ctx.pathParam("service");
+        int dotIndex = serviceName.indexOf('.');
+        if (dotIndex < 0) throw new IllegalArgumentException("Missing file name extension");
+        String type = serviceName.substring(dotIndex + 1).toLowerCase();
+        serviceName = serviceName.substring(0, dotIndex);
+        String fsvc = serviceName;
+        TVService service = server.getMetadataController().getService(serviceName)
+                .orElseThrow(() -> new NotFoundException("Service " + fsvc + " is not available"));
+        return Map.entry(service, type);
     }
 
     private void serveService(Context ctx, TVService service, AdapterInfo adapter, String type)
@@ -141,14 +144,5 @@ public class StreamController {
             provider = null;
             server.logClientActivity(ctx, String.format("Stopped streaming service %s with format %s", service, fmt));
         }
-    }
-
-    private static Map.Entry<String, String> getService(Context ctx) {
-        String service = ctx.pathParam("service");
-        int dotIndex = service.indexOf('.');
-        if (dotIndex < 0) throw new IllegalArgumentException("Missing file name extension");
-        String type = service.substring(dotIndex + 1).toLowerCase();
-        service = service.substring(0, dotIndex);
-        return Map.entry(service, type);
     }
 }

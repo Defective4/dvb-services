@@ -1,11 +1,10 @@
 package io.github.defective4.tv.dvbservices.http.controller;
 
-import java.util.LinkedHashMap;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
@@ -15,6 +14,7 @@ import io.github.defective4.tv.dvbservices.http.model.APIStatus;
 import io.github.defective4.tv.dvbservices.http.model.AdapterState;
 import io.github.defective4.tv.dvbservices.http.model.EPG;
 import io.github.defective4.tv.dvbservices.http.model.ScannerAction;
+import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
@@ -46,11 +46,9 @@ public class APIController {
     @OpenApi(tags = "API", path = "/api/metadata/services", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get a list of services", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = APIServices.class, mimeType = ContentType.JSON)))
     public void getServices(Context ctx) throws UnauthorizedException {
         authorizeR(ctx);
-        Map<String, AdapterInfo> table = server.getMetadataController().getAdapterTable();
-        Map<String, Integer> services = new LinkedHashMap<>();
-        table.entrySet().forEach(t -> services.put(t.getKey(), t.getValue().freq()));
+        Map<Integer, Collection<TVService>> table = server.getMetadataController().getServiceMap();
 
-        ctx.json(new APIServices(services));
+        ctx.json(new APIServices(table));
         server.logClientActivity(ctx, ctx.path());
     }
 

@@ -57,7 +57,7 @@ public class MetadataController {
 
     private final List<AdapterInfo> adapters;
 
-    private final Map<String, AdapterInfo> adapterTable = new HashMap<>();
+    private final Map<Integer, AdapterInfo> adapterTable = new HashMap<>();
     private final String baseURL;
     private int dumpingProgress;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
@@ -163,7 +163,7 @@ public class MetadataController {
         return adapters;
     }
 
-    public Map<String, AdapterInfo> getAdapterTable() {
+    public Map<Integer, AdapterInfo> getAdapterTable() {
         return Collections.unmodifiableMap(adapterTable);
     }
 
@@ -184,8 +184,12 @@ public class MetadataController {
         return adapters.stream().filter(adapter -> adapter.freq() == frequency).findAny();
     }
 
-    public Optional<AdapterInfo> getServiceAdapter(String service) {
-        return Optional.ofNullable(adapterTable.get(service));
+    public Optional<AdapterInfo> getServiceAdapter(TVService service) {
+        return Optional.ofNullable(adapterTable.get(service.id()));
+    }
+
+    public Map<Integer, Collection<TVService>> getServiceMap() {
+        return Collections.unmodifiableMap(serviceMap);
     }
 
     public boolean isDumping() {
@@ -289,7 +293,7 @@ public class MetadataController {
     }
 
     private void putResult(AdapterInfo adapter, CachedResult result) {
-        for (String svc : result.services().values()) adapterTable.put(svc, adapter);
+        for (int svc : result.services().keySet()) adapterTable.put(svc, adapter);
         Map<String, List<FriendlyEvent>> events = new LinkedHashMap<>();
         for (Entry<Integer, List<FriendlyEvent>> entry : result.events().entrySet()) {
             String svc = result.services().get(entry.getKey());
