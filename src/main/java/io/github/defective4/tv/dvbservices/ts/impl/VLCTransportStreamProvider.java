@@ -42,6 +42,7 @@ public class VLCTransportStreamProvider implements TransportStreamProvider {
         Process proc = ProcessUtils.start(vlcPath, "--version");
         try (BufferedReader reader = proc.errorReader()) {
             String line = reader.readLine();
+            proc.destroyForcibly();
             return line == null;
         }
     }

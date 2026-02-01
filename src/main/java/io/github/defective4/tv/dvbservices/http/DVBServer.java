@@ -27,6 +27,7 @@ import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.Provider;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.DVBV5SCanProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
@@ -75,6 +76,7 @@ public class DVBServer {
         };
         metaProviderFactory = switch (settings.tools.metadataProvider) {
             case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
+            case DVBV5 -> DVBV5SCanProvider.factory(settings.tools.paths.dvbv5ScanPath);
             default -> throw new IllegalArgumentException(
                     settings.tools.streamProvider + " can not be used as a stream provider");
         };
@@ -90,6 +92,21 @@ public class DVBServer {
             logger.error(String.format(
                     "Transport Stream provider %s is not available. The server can't process streams without it.",
                     providerName));
+            System.exit(5);
+            throw e;
+        }
+        logger.info("Provider " + providerName + " OK");
+
+        try (Provider provider = metaProviderFactory.create()) {
+            providerName = provider.getFullName();
+            logger.info("Checking metadata provider availability");
+            if (!provider.isAvailable()) {
+                throw new IOException();
+            }
+        } catch (IOException e) {
+            logger.error(
+                    String.format("Metadata provider %s is not available. The server can't process streams without it.",
+                            providerName));
             System.exit(5);
             throw e;
         }

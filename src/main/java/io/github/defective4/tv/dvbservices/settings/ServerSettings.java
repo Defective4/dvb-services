@@ -78,13 +78,14 @@ public class ServerSettings {
         }
 
         public static class Paths {
+            public String dvbv5ScanPath = "dvbv5-scan";
             public String ffmpegPath = "ffmpeg";
             public String tspPath = "tsp";
             public String vlcPath = "vlc";
         }
 
         public static enum StreamProviderType {
-            TSDUCK, VLC;
+            DVBV5, TSDUCK, VLC;
         }
 
         public ConverterType mediaConverter = ConverterType.FFMPEG;

@@ -75,6 +75,7 @@ public class TSDuckProvider implements TransportStreamProvider, MetadataProvider
         Process proc = ProcessUtils.start(tspExecutable, "--version");
         try (BufferedReader reader = new BufferedReader(proc.errorReader())) {
             String line = reader.readLine();
+            proc.destroyForcibly();
             return line != null && line.startsWith(VERSION_STRING);
         }
     }
