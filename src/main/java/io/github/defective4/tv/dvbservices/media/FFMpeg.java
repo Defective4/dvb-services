@@ -91,6 +91,11 @@ public class FFMpeg implements MediaConverter {
         }
     }
 
+    @Override
+    public boolean isFormatSupported(MediaFormat fmt) {
+        return true;
+    }
+
     public static MediaConverterFactory<FFMpeg> factory(String ffmpegPath) {
         return () -> new FFMpeg(ffmpegPath);
     }

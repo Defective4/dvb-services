@@ -113,6 +113,10 @@ public class StreamController {
                 }
             } else {
                 try (MediaConverter converter = server.getMediaConverterFactory().create()) {
+                    if (!converter.isFormatSupported(fmt)) {
+                        throw new UnsupportedOperationException(
+                                converter.getName() + " does not support this media format.");
+                    }
                     String opts = server.getSettings().server.audio.converterParams;
                     converter.convert(in, out, fmt, opts.isBlank() ? new String[0] : opts.split(" "));
                     converter.closePeacefully();

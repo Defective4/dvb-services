@@ -2,8 +2,8 @@ package io.github.defective4.tv.dvbservices.ts.playlist;
 
 public enum MediaFormat {
     MP3("mp3", new String[0], false, "mp3"), OGG("vorb", new String[0], true, "ogg"),
-    OPUS("opus", new String[] { "-ac", "2" }, false, "raw"), TS(null, null, false, null),
-    WAV("s16l", new String[0], false, "wav");
+    OPUS("opus", new String[] { "-ac", "2" }, false, null), TS(null, null, false, null),
+    WAV("s16l", new String[0], false, null);
 
     private final String acodec;
     private final String[] ffmpegArgs;

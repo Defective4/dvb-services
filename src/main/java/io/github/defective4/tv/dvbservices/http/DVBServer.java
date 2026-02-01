@@ -3,11 +3,15 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -81,11 +85,11 @@ public class DVBServer {
                 if (!conv.isAvailable()) {
                     throw new IOException();
                 }
+                logger.info(cname + " OK");
             } catch (IOException ex) {
                 settings.server.formats = settings.server.formats.stream().filter(e -> e == MediaFormat.TS).toList();
                 logger.warn(cname + " is not available. All media formats other than TS are disabled");
             }
-            logger.info(cname + " OK");
         } else {
             logger.info("No transcoding need, media converter check skipped");
         }
@@ -154,6 +158,8 @@ public class DVBServer {
         javalin.exception(AdapterUnavailableException.class, exceptionController::handleAdapterUnavailableException);
         javalin.exception(UnauthorizedException.class, exceptionController::handleUnauthorizedException);
         javalin.exception(APIReadOnlyException.class, exceptionController::handleAPIReadOnlyException);
+        javalin.exception(UnsupportedOperationException.class,
+                exceptionController::handleUnsupportedOperationException);
     }
 
     public Logger getLogger() {
@@ -192,4 +198,6 @@ public class DVBServer {
         javalin.start(host, port);
         metadataController.schedule();
     }
+
+    private <E extends Exception> void handleUnsupportedOperationException(@NotNull E e1, @NotNull Context context2) {}
 }

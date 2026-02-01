@@ -40,6 +40,10 @@ public class ExceptionController {
         simpleResponse(ctx, ex, HttpStatus.UNAUTHORIZED);
     }
 
+    public void handleUnsupportedOperationException(UnsupportedOperationException ex, Context ctx) {
+        simpleResponse(ctx, ex, HttpStatus.NOT_IMPLEMENTED);
+    }
+
     private void simpleResponse(Context ctx, Exception ex, HttpStatus status) {
         ctx.result(ex.getMessage());
         ctx.status(status);

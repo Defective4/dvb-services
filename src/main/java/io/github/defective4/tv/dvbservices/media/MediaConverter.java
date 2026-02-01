@@ -20,6 +20,8 @@ public interface MediaConverter extends AutoCloseable {
 
     boolean isAvailable() throws IOException;
 
+    boolean isFormatSupported(MediaFormat fmt);
+
     public static void copyStream(InputStream from, OutputStream fo) throws IOException {
         byte[] buffer = new byte[1024];
         int read;
