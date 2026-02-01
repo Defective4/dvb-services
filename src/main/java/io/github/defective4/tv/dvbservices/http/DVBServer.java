@@ -3,15 +3,12 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
-
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
-
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;

@@ -1,6 +1,7 @@
 package io.github.defective4.tv.dvbservices.media;
 
 import static io.github.defective4.tv.dvbservices.media.MediaConverter.copyStream;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
@@ -58,16 +60,19 @@ public class FFMpeg implements MediaConverter {
 
         if (fmt.requiresIntermediate()) {
             Process wav = ProcessUtils.start(ffmpegPath, "-i", "-", "-f", "wav", "-");
-            Future<Boolean> subtask = service.submit(() -> {
-                try (OutputStream so = wav.getOutputStream()) {
-                    copyStream(from, so);
+            try {
+                service.submit(() -> {
+                    try (OutputStream so = wav.getOutputStream()) {
+                        copyStream(from, so);
+                    } catch (IOException e) {}
+                    return true;
+                });
+                try (OutputStream fo = process.getOutputStream()) {
+                    copyStream(wav.getInputStream(), fo);
                 } catch (IOException e) {}
-                return true;
-            });
-            try (OutputStream fo = process.getOutputStream()) {
-                copyStream(wav.getInputStream(), fo);
-            } catch (IOException e) {}
-            subtask.get();
+            } finally {
+                wav.destroyForcibly();
+            }
         } else {
             try (OutputStream fo = process.getOutputStream()) {
                 copyStream(from, fo);
