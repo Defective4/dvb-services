@@ -175,6 +175,11 @@ public class MetadataController {
         return Collections.unmodifiableMap(epg);
     }
 
+    public Optional<TVService> getService(int id) {
+        return serviceMap.values().stream().map(col -> col.stream().filter(tv -> tv.id() == id).findAny())
+                .filter(Optional::isPresent).map(Optional::get).findAny();
+    }
+
     public Optional<TVService> getService(String name) {
         return serviceMap.values().stream().map(col -> col.stream().filter(tv -> tv.name().equals(name)).findAny())
                 .filter(Optional::isPresent).map(Optional::get).findAny();

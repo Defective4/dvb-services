@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -93,8 +94,19 @@ public class StreamController {
         String type = serviceName.substring(dotIndex + 1).toLowerCase();
         serviceName = serviceName.substring(0, dotIndex);
         String fsvc = serviceName;
-        TVService service = server.getMetadataController().getService(serviceName)
-                .orElseThrow(() -> new NotFoundException("Service " + fsvc + " is not available"));
+
+        Optional<TVService> opt;
+        try {
+            int id;
+            if (fsvc.startsWith("0x"))
+                id = Integer.parseInt(fsvc.substring(2));
+            else
+                id = Integer.parseInt(fsvc, 16);
+            opt = server.getMetadataController().getService(id);
+        } catch (NumberFormatException e) {
+            opt = server.getMetadataController().getService(serviceName);
+        }
+        TVService service = opt.orElseThrow(() -> new NotFoundException("Service " + fsvc + " is not available"));
         return Map.entry(service, type);
     }
 
