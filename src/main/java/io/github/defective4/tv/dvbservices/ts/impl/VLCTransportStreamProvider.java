@@ -3,6 +3,7 @@ package io.github.defective4.tv.dvbservices.ts.impl;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
@@ -20,10 +21,10 @@ public class VLCTransportStreamProvider implements TransportStreamProvider {
     @Override
     public InputStream captureTS(AdapterInfo adapter, int service, boolean audioOnly) throws IOException {
         checkUsed();
-        String input = adapter.streamOptions().input();
+        String input = adapter.streamOptions().driver();
         if (input == null) throw new IllegalArgumentException("input can't be null when using hybrid adapter");
         process = ProcessUtils.start(vlcPath, "-I", "dummy", "--sout", "#file{dst=/dev/stdout,mux=ts}", "--no-sout-all",
-                "--sout-keep", adapter.streamOptions().input(), ":program=" + service);
+                "--sout-keep", adapter.streamOptions().driver(), ":program=" + service);
         return process.getInputStream();
     }
 

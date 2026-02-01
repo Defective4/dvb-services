@@ -21,12 +21,12 @@ import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
 
-public class DVBV5SCanProvider implements MetadataProvider {
+public class DVBV5ScanProvider implements MetadataProvider {
 
     private final String dvbv5ScanPath;
     private Process process;
 
-    private DVBV5SCanProvider(String dvbv5ScanPath) {
+    private DVBV5ScanProvider(String dvbv5ScanPath) {
         this.dvbv5ScanPath = dvbv5ScanPath;
     }
 
@@ -89,8 +89,8 @@ public class DVBV5SCanProvider implements MetadataProvider {
         return true;
     }
 
-    public static ProviderFactory<DVBV5SCanProvider> factory(String dvbv5ScanPath) {
-        return () -> new DVBV5SCanProvider(dvbv5ScanPath);
+    public static ProviderFactory<DVBV5ScanProvider> factory(String dvbv5ScanPath) {
+        return () -> new DVBV5ScanProvider(dvbv5ScanPath);
     }
 
 }

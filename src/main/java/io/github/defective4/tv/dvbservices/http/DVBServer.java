@@ -3,12 +3,15 @@ package io.github.defective4.tv.dvbservices.http;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -27,7 +30,7 @@ import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.Provider;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
-import io.github.defective4.tv.dvbservices.ts.impl.DVBV5SCanProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.DVBV5ScanProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
@@ -76,9 +79,9 @@ public class DVBServer {
         };
         metaProviderFactory = switch (settings.tools.metadataProvider) {
             case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
-            case DVBV5 -> DVBV5SCanProvider.factory(settings.tools.paths.dvbv5ScanPath);
+            case DVBV5 -> DVBV5ScanProvider.factory(settings.tools.paths.dvbv5ScanPath);
             default -> throw new IllegalArgumentException(
-                    settings.tools.streamProvider + " can not be used as a stream provider");
+                    settings.tools.metadataProvider + " can not be used as a metadata provider");
         };
 
         String providerName = null;
