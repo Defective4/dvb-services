@@ -25,7 +25,7 @@ import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
-import io.github.defective4.tv.dvbservices.ts.external.TSDuckProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -49,6 +49,7 @@ public class DVBServer {
     public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.paths.tspPath);
+//        tspProviderFactory = VLCTransportStreamProvider.factory(settings.tools.paths.vlcPath);
         if (settings.tools.mediaConverter == null) {
             logger.error("Invalid media converter");
             System.exit(4);

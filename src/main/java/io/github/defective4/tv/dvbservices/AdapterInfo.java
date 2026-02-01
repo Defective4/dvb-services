@@ -4,14 +4,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import io.github.defective4.tv.dvbservices.util.HashUtil;
 
-public record AdapterInfo(String driver, Map<String, String> options, float frequency, String... args) {
+public record AdapterInfo(String input, Map<String, String> options, float frequency, String... args) {
     public int freq() {
         return (int) frequency;
     }
 
     public String calculateString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(driver()).append("_").append(freq()).append("_");
+        builder.append(input()).append("_").append(freq()).append("_");
         StringBuilder opsBuilder = new StringBuilder();
         for (Entry<String, String> entry : options().entrySet())
             opsBuilder.append(entry.getKey() + "_" + entry.getValue());
@@ -28,8 +28,8 @@ public record AdapterInfo(String driver, Map<String, String> options, float freq
     }
 
     @Override
-    public String driver() {
-        return driver == null ? "file" : driver;
+    public String input() {
+        return input == null ? "file" : input;
     }
 
     @Override

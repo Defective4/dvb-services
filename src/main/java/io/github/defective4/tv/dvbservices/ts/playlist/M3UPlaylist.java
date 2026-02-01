@@ -5,10 +5,11 @@ import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import io.github.defective4.tv.dvbservices.http.model.TVService;
 
 public class M3UPlaylist extends Playlist {
 
-    public M3UPlaylist(Map<Integer, Collection<String>> services, String baseURL) {
+    public M3UPlaylist(Map<Integer, Collection<TVService>> services, String baseURL) {
         super(services, baseURL);
     }
 
@@ -18,11 +19,11 @@ public class M3UPlaylist extends Playlist {
         try (PrintWriter pw = new PrintWriter(writer)) {
             pw.println("#EXTM3U");
             pw.println("#PLAYLIST:" + title);
-            for (Entry<Integer, Collection<String>> entry : getServices().entrySet()) {
+            for (Entry<Integer, Collection<TVService>> entry : getServices().entrySet()) {
                 int freq = entry.getKey();
-                for (String service : entry.getValue()) {
-                    pw.println("#EXTINF:0," + service);
-                    pw.println(format(freq, service, format));
+                for (TVService service : entry.getValue()) {
+                    pw.println("#EXTINF:0," + service.name());
+                    pw.println(format(freq, service.name(), format));
                 }
             }
         }

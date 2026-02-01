@@ -31,7 +31,8 @@ import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
-import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
+import io.github.defective4.tv.dvbservices.http.model.CachedResult;
+import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
@@ -63,7 +64,7 @@ public class MetadataController {
     private final Gson gson = new Gson();
     private boolean isDumping;
     private final DVBServer server;
-    private final Map<Integer, Collection<String>> serviceMap = new LinkedHashMap<>();
+    private final Map<Integer, Collection<TVService>> serviceMap = new LinkedHashMap<>();
     private final Timer timer = new Timer(true);
 
     public MetadataController(List<AdapterInfo> adapters, String baseURL, DVBServer server) {
@@ -77,9 +78,7 @@ public class MetadataController {
     }
 
     public boolean captureEPG(boolean ignoreCache) {
-        if (server.getStreamController().isWatching() || isDumping()
-                || !server.getSettings().metadata.enableMetaCapture)
-            return false;
+        if (server.getStreamController().isWatching() || isDumping()) return false;
         isDumping = true;
         dumpingProgress = 0;
         try {
@@ -116,7 +115,7 @@ public class MetadataController {
                         if (dataFile.isFile() && !ignoreCache && diff < cache.cacheTTL
                                 && HashUtil.hashEquals(dataFile, binHash)) {
                             try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
-                                Map<String, List<FriendlyEvent>> result = gson.fromJson(reader, Map.class);
+                                CachedResult result = gson.fromJson(reader, CachedResult.class);
                                 putResult(adapter, result);
                                 cached.add(adapter);
                                 size++;
@@ -145,8 +144,7 @@ public class MetadataController {
 
             for (Entry<AdapterInfo, File> entry : files.entrySet()) {
                 try {
-                    Map<String, List<FriendlyEvent>> result = getOrCached(entry.getKey(), entry.getValue(),
-                            ignoreCache);
+                    CachedResult result = getOrCached(entry.getKey(), entry.getValue(), ignoreCache);
 
                     putResult(entry.getKey(), result);
                     entry.getValue().delete();
@@ -177,6 +175,11 @@ public class MetadataController {
         return Collections.unmodifiableMap(epg);
     }
 
+    public Optional<TVService> getService(String name) {
+        return serviceMap.values().stream().map(col -> col.stream().filter(tv -> tv.name().equals(name)).findAny())
+                .filter(Optional::isPresent).map(Optional::get).findAny();
+    }
+
     public Optional<AdapterInfo> getServiceAdapter(int frequency) {
         return adapters.stream().filter(adapter -> adapter.freq() == frequency).findAny();
     }
@@ -190,7 +193,6 @@ public class MetadataController {
     }
 
     public void schedule() {
-        if (!server.getSettings().metadata.enableMetaCapture) return;
         timer.scheduleAtFixedRate(new TimerTask() {
 
             private int time;
@@ -226,8 +228,7 @@ public class MetadataController {
 
     @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.m3u", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = M3U_MIME)) })
-    public void serveM3U(Context ctx, String title, MediaFormat format) throws NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+    public void serveM3U(Context ctx, String title, MediaFormat format) {
         ctx.contentType(M3U_MIME);
         ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title, format));
         server.logClientActivity(ctx, ctx.path());
@@ -235,8 +236,7 @@ public class MetadataController {
 
     @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.txt", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.PLAIN)) })
-    public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException, NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+    public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException {
         ctx.contentType(ContentType.TEXT_PLAIN);
         ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(null, format));
         server.logClientActivity(ctx, ctx.path());
@@ -244,8 +244,7 @@ public class MetadataController {
 
     @OpenApi(tags = "Metadata", path = "/meta/epg.xml", methods = HttpMethod.GET, responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.XML)) })
-    public void serveXMLTV(Context ctx) throws TransformerException, NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+    public void serveXMLTV(Context ctx) throws TransformerException {
         String xmltv = ElectronicProgramGuide.generateXmlTV(epg);
         ctx.contentType(ContentType.XML);
         ctx.result(xmltv);
@@ -254,16 +253,15 @@ public class MetadataController {
 
     @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.xspf", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.PLAIN)) })
-    public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException, NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+    public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException {
         ctx.contentType(XSPF_MIME);
         ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title, format));
         server.logClientActivity(ctx, ctx.path());
     }
 
-    private Map<String, List<FriendlyEvent>> getOrCached(AdapterInfo adapter, File file, boolean ignoreCache)
+    private CachedResult getOrCached(AdapterInfo adapter, File file, boolean ignoreCache)
             throws NotAnMPEGFileException, IOException, ParseException {
-        Map<String, List<FriendlyEvent>> result = null;
+        CachedResult result = null;
         Cache cache = server.getSettings().cache;
         File dataFile = null;
         File metaFile = null;
@@ -290,9 +288,16 @@ public class MetadataController {
         return result;
     }
 
-    private void putResult(AdapterInfo adapter, Map<String, List<FriendlyEvent>> result) {
-        for (String svc : result.keySet()) adapterTable.put(svc, adapter);
-        serviceMap.computeIfAbsent(adapter.freq(), t -> new ArrayList<>()).addAll(result.keySet());
-        epg.putAll(result);
+    private void putResult(AdapterInfo adapter, CachedResult result) {
+        for (String svc : result.services().values()) adapterTable.put(svc, adapter);
+        Map<String, List<FriendlyEvent>> events = new LinkedHashMap<>();
+        for (Entry<Integer, List<FriendlyEvent>> entry : result.events().entrySet()) {
+            String svc = result.services().get(entry.getKey());
+            if (svc == null) continue;
+            events.put(svc, entry.getValue());
+        }
+        serviceMap.computeIfAbsent(adapter.freq(), t -> new ArrayList<>()).addAll(
+                result.services().entrySet().stream().map(e -> new TVService(e.getValue(), e.getKey())).toList());
+        epg.putAll(events);
     }
 }

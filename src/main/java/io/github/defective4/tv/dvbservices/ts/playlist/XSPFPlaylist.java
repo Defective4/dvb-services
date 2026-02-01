@@ -10,11 +10,12 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
+import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.util.DOMUtils;
 
 public class XSPFPlaylist extends Playlist {
 
-    public XSPFPlaylist(Map<Integer, Collection<String>> services, String baseURL) {
+    public XSPFPlaylist(Map<Integer, Collection<TVService>> services, String baseURL) {
         super(services, baseURL);
     }
 
@@ -27,15 +28,15 @@ public class XSPFPlaylist extends Playlist {
             playlist.setAttribute("version", "1");
             createAndAppendElement(playlist, "title", e -> e.setTextContent(title));
             createAndAppendElement(playlist, "trackList", tracks -> {
-                for (Entry<Integer, Collection<String>> entry : getServices().entrySet()) {
+                for (Entry<Integer, Collection<TVService>> entry : getServices().entrySet()) {
                     int freq = entry.getKey();
                     int id = 0;
-                    for (String service : entry.getValue()) {
+                    for (TVService service : entry.getValue()) {
                         int fid = id;
                         createAndAppendElement(tracks, "track", track -> {
                             createAndAppendElement(track, "location",
-                                    loc -> loc.setTextContent(format(freq, service, format)));
-                            createAndAppendElement(track, "title", e -> e.setTextContent(service));
+                                    loc -> loc.setTextContent(format(freq, service.name(), format)));
+                            createAndAppendElement(track, "title", e -> e.setTextContent(service.name()));
                             createAndAppendElement(track, "extension", ext -> {
                                 ext.setAttribute("application", "http://www.videolan.org/vlc/playlist/0");
                                 createAndAppendElement(ext, "vlc:id", vid -> vid.setTextContent(Integer.toString(fid)));

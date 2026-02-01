@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,6 +13,7 @@ import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
+import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.media.MediaConverter;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
@@ -38,13 +40,18 @@ public class StreamController {
             @OpenApiResponse(description = "Media stream with undefined length", status = "200"),
             @OpenApiResponse(status = "404"), @OpenApiResponse(status = "500") })
     public void serveVideo(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
-        if (!server.getSettings().metadata.enableMetaCapture)
-            throw new NotFoundException("Server has metadata capture disabled, use the frequency+service endpoint.");
         checkAvailable();
         Entry<String, String> serviceEntry = getService(ctx);
-        String service = serviceEntry.getKey();
-        AdapterInfo adapter = server.getMetadataController().getServiceAdapter(service)
-                .orElseThrow(() -> new NotFoundException("Service " + service + " is not available"));
+        String serviceName = serviceEntry.getKey();
+        TVService service;
+        AdapterInfo adapter;
+        try {
+            MetadataController ctl = server.getMetadataController();
+            service = ctl.getService(serviceName).orElseThrow();
+            adapter = ctl.getServiceAdapter(serviceName).orElseThrow();
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException("Service " + serviceName + " is not available");
+        }
         String type = serviceEntry.getValue();
 
         serveService(ctx, service, adapter, type);
@@ -58,13 +65,19 @@ public class StreamController {
                     @OpenApiResponse(status = "500") })
     public void serveVideoExact(Context ctx) throws NotFoundException, AdapterUnavailableException, IOException {
         checkAvailable();
+        MetadataController ctl = server.getMetadataController();
+
         Entry<String, String> entry = getService(ctx);
-        String service = entry.getKey();
+        String serviceName = entry.getKey();
         String type = entry.getValue();
         int frequency = ctx.pathParamAsClass("frequency", int.class)
                 .getOrThrow(arg0 -> new IllegalArgumentException("The frequency must be a valid number"));
-        AdapterInfo adapter = server.getMetadataController().getServiceAdapter(frequency)
+
+        AdapterInfo adapter = ctl.getServiceAdapter(frequency)
                 .orElseThrow(() -> new NotFoundException("There is no adapter for this frequency"));
+
+        TVService service = ctl.getService(serviceName)
+                .orElseThrow(() -> new NotFoundException("Service " + serviceName + " is not available"));
 
         serveService(ctx, service, adapter, type);
     }
@@ -82,7 +95,7 @@ public class StreamController {
         }
     }
 
-    private void serveService(Context ctx, String service, AdapterInfo adapter, String type)
+    private void serveService(Context ctx, TVService service, AdapterInfo adapter, String type)
             throws NotFoundException, IOException {
 
         MediaFormat fmt;
@@ -97,7 +110,7 @@ public class StreamController {
         }
 
         try (TransportStreamProvider provider = server.getTspProviderFactory().create();
-                InputStream in = provider.captureTS(adapter, service, !fmt.isVideo());
+                InputStream in = provider.captureTS(adapter, service.id(), !fmt.isVideo());
                 OutputStream out = ctx.outputStream()) {
             this.provider = provider;
 

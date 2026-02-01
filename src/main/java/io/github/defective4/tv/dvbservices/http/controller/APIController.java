@@ -9,7 +9,6 @@ import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
-import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.http.model.APIServices;
 import io.github.defective4.tv.dvbservices.http.model.APIStatus;
@@ -45,8 +44,7 @@ public class APIController {
     }
 
     @OpenApi(tags = "API", path = "/api/metadata/services", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get a list of services", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = APIServices.class, mimeType = ContentType.JSON)))
-    public void getServices(Context ctx) throws UnauthorizedException, NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+    public void getServices(Context ctx) throws UnauthorizedException {
         authorizeR(ctx);
         Map<String, AdapterInfo> table = server.getMetadataController().getAdapterTable();
         Map<String, Integer> services = new LinkedHashMap<>();
@@ -66,7 +64,7 @@ public class APIController {
 
     @OpenApi(tags = "API", path = "/api/metadata/scanner", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.POST, summary = "Control metadata scanner", responses = @OpenApiResponse(status = "200"), formParams = @OpenApiParam(allowEmptyValue = false, required = true, type = ScannerAction.class, name = "action", example = "SCAN"))
     public void handleScanner(Context ctx)
-            throws UnauthorizedException, APIReadOnlyException, AdapterUnavailableException, NotFoundException {
+            throws UnauthorizedException, APIReadOnlyException, AdapterUnavailableException {
         String act = ctx.formParam("action");
         if (act == null) throw new IllegalArgumentException("Missing action param");
         ScannerAction action;
@@ -104,8 +102,7 @@ public class APIController {
     }
 
     private void scanMetadata(Context ctx)
-            throws UnauthorizedException, APIReadOnlyException, AdapterUnavailableException, NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+            throws UnauthorizedException, APIReadOnlyException, AdapterUnavailableException {
         authorizeW(ctx);
         MetadataController metadataController = server.getMetadataController();
         if (scannerTask != null && !scannerTask.isDone() && !scannerTask.isCancelled()) {
@@ -123,8 +120,7 @@ public class APIController {
         server.logClientActivity(ctx, "Manual metadata scan started");
     }
 
-    private void toggleMetadataScanner(Context ctx, boolean enable) throws NotFoundException {
-        server.getSettings().metadata.checkMetaCapture();
+    private void toggleMetadataScanner(Context ctx, boolean enable) {
         server.getSettings().metadata.scheduleMetaCapture = enable;
         ctx.result(String.format("Metadata scanner %s", enable ? "enabled" : "disabled"));
     }

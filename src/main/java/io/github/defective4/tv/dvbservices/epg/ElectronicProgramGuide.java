@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import io.github.defective4.tv.dvbservices.http.model.CachedResult;
 import nl.digitalekabeltelevisie.data.mpeg.PSI;
 import nl.digitalekabeltelevisie.data.mpeg.TransportStream;
 import nl.digitalekabeltelevisie.data.mpeg.psi.EIT;
@@ -54,8 +56,7 @@ public class ElectronicProgramGuide {
         return writer.toString();
     }
 
-    public static Map<String, List<FriendlyEvent>> readEPG(File tsFile)
-            throws NotAnMPEGFileException, IOException, ParseException {
+    public static CachedResult readEPG(File tsFile) throws NotAnMPEGFileException, IOException, ParseException {
         TransportStream stream = new TransportStream(tsFile);
         stream.parseStream(null);
         PSI psi = stream.getPsi();
@@ -63,22 +64,24 @@ public class ElectronicProgramGuide {
         EIT eit = psi.getEit();
 
         Map<ServiceIdentification, EITsection[]> schedule = eit.getCombinedSchedule();
-        Map<String, List<FriendlyEvent>> events = new LinkedHashMap<>();
+        Map<Integer, List<FriendlyEvent>> events = new LinkedHashMap<>();
+        Map<Integer, String> pat = new HashMap<>();
         for (Entry<ServiceIdentification, EITsection[]> scheduleEntry : schedule.entrySet()) {
             ServiceIdentification service = scheduleEntry.getKey();
             String serviceName = sdt.getServiceName(service.originalNetworkId(), service.transportStreamId(),
                     service.serviceId());
+            pat.put(service.serviceId(), serviceName);
 
             for (EITsection section : scheduleEntry.getValue()) {
                 if (section == null) continue;
                 for (Event event : section.getEventList()) {
                     FriendlyEvent fe = FriendlyEvent.fromEvent(event);
-                    events.computeIfAbsent(serviceName, t -> new ArrayList<>()).add(fe);
+                    events.computeIfAbsent(service.serviceId(), t -> new ArrayList<>()).add(fe);
                 }
             }
         }
 
-        return Collections.unmodifiableMap(events);
+        return new CachedResult(Collections.unmodifiableMap(events), Collections.unmodifiableMap(pat));
     }
 
     private static List<Element> createChannelElements(Document doc, Set<String> services) {

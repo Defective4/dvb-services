@@ -5,12 +5,13 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
+import io.github.defective4.tv.dvbservices.http.model.TVService;
 
 public abstract class Playlist {
     private final String baseURL;
-    private final Map<Integer, Collection<String>> services;
+    private final Map<Integer, Collection<TVService>> services;
 
-    protected Playlist(Map<Integer, Collection<String>> services, String baseURL) {
+    protected Playlist(Map<Integer, Collection<TVService>> services, String baseURL) {
         this.baseURL = baseURL;
         this.services = Map.copyOf(services);
     }
@@ -24,7 +25,7 @@ public abstract class Playlist {
         return baseURL;
     }
 
-    public Map<Integer, Collection<String>> getServices() {
+    public Map<Integer, Collection<TVService>> getServices() {
         return services;
     }
 

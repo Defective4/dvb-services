@@ -1,4 +1,4 @@
-package io.github.defective4.tv.dvbservices.ts.external;
+package io.github.defective4.tv.dvbservices.ts.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,7 +14,7 @@ import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
-public class TSDuckProvider extends TransportStreamProvider {
+public class TSDuckProvider implements TransportStreamProvider {
 
     private static final String VERSION_STRING = "tsp: TSDuck - The MPEG Transport Stream Toolkit";
     private Process process;
@@ -27,10 +27,10 @@ public class TSDuckProvider extends TransportStreamProvider {
     }
 
     @Override
-    public InputStream captureTS(AdapterInfo adapter, String service, boolean audioOnly) throws IOException {
+    public InputStream captureTS(AdapterInfo adapter, int service, boolean audioOnly) throws IOException {
         checkUsed();
         List<String> args = constructInitialParams(adapter);
-        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "-p", "18", "--service", service));
+        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "-p", "18", "--service", Integer.toString(service)));
         process = ProcessUtils.start(args.toArray(new String[0]));
         return process.getInputStream();
     }
@@ -76,7 +76,7 @@ public class TSDuckProvider extends TransportStreamProvider {
         List<String> arguments = new ArrayList<>();
         arguments.add(tspExecutable);
         arguments.add("-I");
-        arguments.add(adapter.driver());
+        arguments.add(adapter.input());
         for (Entry<String, String> entry : adapter.options().entrySet()) {
             arguments.add("--" + entry.getKey());
             arguments.add(entry.getValue());
@@ -86,13 +86,7 @@ public class TSDuckProvider extends TransportStreamProvider {
     }
 
     public static TransportStreamProviderFactory<TSDuckProvider> factory(String tspExecutable) {
-        return new TransportStreamProviderFactory<>() {
-
-            @Override
-            public TSDuckProvider create() {
-                return new TSDuckProvider(tspExecutable);
-            }
-        };
+        return () -> new TSDuckProvider(tspExecutable);
     }
 
 }

@@ -5,18 +5,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 
-public abstract class TransportStreamProvider implements AutoCloseable {
+public interface TransportStreamProvider extends AutoCloseable {
 
-    protected TransportStreamProvider() {}
-
-    public abstract InputStream captureTS(AdapterInfo adapter, String service, boolean audioOnly) throws IOException;
+    InputStream captureTS(AdapterInfo adapter, int service, boolean audioOnly) throws IOException;
 
     @Override
-    public abstract void close() throws IOException;
+    void close() throws IOException;
 
-    public abstract void dumpPSI(AdapterInfo adapter, File target, long timeout) throws IOException;
+    void dumpPSI(AdapterInfo adapter, File target, long timeout) throws IOException;
 
-    public abstract String getFullName();
+    String getFullName();
 
-    public abstract boolean isAvailable() throws IOException;
+    boolean isAvailable() throws IOException;
 }
