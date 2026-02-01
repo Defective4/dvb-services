@@ -34,7 +34,7 @@ import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
 import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
-import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
+import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.M3UPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaintextPlaylist;
@@ -129,7 +129,7 @@ public class MetadataController {
 
             for (AdapterInfo adapter : adapters) {
                 if (cached.contains(adapter)) continue;
-                try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
+                try (MetadataProvider ts = server.getMetaProviderFactory().create()) {
                     MetadataResult result = ts.captureMetadata(adapter,
                             TimeUnit.SECONDS.toMillis(server.getSettings().metadata.metaCaptureTimeout));
                     cache(adapter, ignoreCache, result);

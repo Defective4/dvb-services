@@ -15,6 +15,7 @@ import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.media.MediaConverter;
+import io.github.defective4.tv.dvbservices.ts.Provider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.http.Context;
@@ -24,7 +25,7 @@ import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiResponse;
 
 public class StreamController {
-    private TransportStreamProvider provider;
+    private Provider provider;
     private final DVBServer server;
     private final ExecutorService service = Executors.newSingleThreadExecutor();
 
@@ -124,7 +125,7 @@ public class StreamController {
             throw new NotFoundException(String.format("This server does not serve %s files", fmt.name()));
         }
 
-        try (TransportStreamProvider provider = server.getTspProviderFactory().create();
+        try (TransportStreamProvider provider = server.getStreamProviderFactory().create();
                 InputStream in = provider.captureTS(adapter, service.id(), !fmt.isVideo());
                 OutputStream out = ctx.outputStream()) {
             this.provider = provider;

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
@@ -83,16 +84,17 @@ public class ServerSettings {
         }
 
         public static enum StreamProviderType {
-            HYBRID, TSDUCK;
+            TSDUCK, VLC;
         }
 
         public ConverterType mediaConverter = ConverterType.FFMPEG;
+        public StreamProviderType metadataProvider = StreamProviderType.TSDUCK;
         public Paths paths = new Paths();
         public StreamProviderType streamProvider = StreamProviderType.TSDUCK;
     }
 
-    public final List<AdapterInfo> adapters = List
-            .of(new AdapterInfo("dvb", null, Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), 538e6f));
+    public final List<AdapterInfo> adapters = List.of(new AdapterInfo(null, new AdapterOptions("dvb", null,
+            Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), new String[0]), 538e6f));
     public API api = new API();
     public Cache cache = new Cache();
     public Metadata metadata = new Metadata();

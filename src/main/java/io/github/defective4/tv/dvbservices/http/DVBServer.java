@@ -23,10 +23,12 @@ import io.github.defective4.tv.dvbservices.media.MediaConverterFactory;
 import io.github.defective4.tv.dvbservices.media.VLC;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
+import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
+import io.github.defective4.tv.dvbservices.ts.Provider;
+import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
-import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
-import io.github.defective4.tv.dvbservices.ts.impl.HybridTransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -42,10 +44,11 @@ public class DVBServer {
     private final Logger logger = new SimpleLoggerFactory().getLogger("dvb-server");
     private final MediaConverterFactory<?> mediaConverterFactory;
     private final MetadataController metadataController;
-    private final ServerSettings settings;
+    private final ProviderFactory<? extends MetadataProvider> metaProviderFactory;
 
+    private final ServerSettings settings;
     private final StreamController streamController;
-    private final TransportStreamProviderFactory<?> tspProviderFactory;
+    private final ProviderFactory<? extends TransportStreamProvider> tspProviderFactory;
 
     public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
@@ -65,13 +68,19 @@ public class DVBServer {
             default -> throw new IllegalArgumentException();
         };
         tspProviderFactory = switch (settings.tools.streamProvider) {
-            case HYBRID ->
-                HybridTransportStreamProvider.factory(settings.tools.paths.vlcPath, settings.tools.paths.tspPath);
+            case VLC -> VLCTransportStreamProvider.factory(settings.tools.paths.vlcPath);
             case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
-            default -> throw new IllegalArgumentException();
+            default -> throw new IllegalArgumentException(
+                    settings.tools.streamProvider + " can not be used as a stream provider");
         };
+        metaProviderFactory = switch (settings.tools.metadataProvider) {
+            case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
+            default -> throw new IllegalArgumentException(
+                    settings.tools.streamProvider + " can not be used as a stream provider");
+        };
+
         String providerName = null;
-        try (TransportStreamProvider provider = tspProviderFactory.create()) {
+        try (Provider provider = tspProviderFactory.create()) {
             providerName = provider.getFullName();
             logger.info("Checking transport stream provider availability");
             if (!provider.isAvailable()) {
@@ -182,6 +191,10 @@ public class DVBServer {
         return metadataController;
     }
 
+    public ProviderFactory<? extends MetadataProvider> getMetaProviderFactory() {
+        return metaProviderFactory;
+    }
+
     public ServerSettings getSettings() {
         return settings;
     }
@@ -190,7 +203,7 @@ public class DVBServer {
         return streamController;
     }
 
-    public TransportStreamProviderFactory<?> getTspProviderFactory() {
+    public ProviderFactory<? extends TransportStreamProvider> getStreamProviderFactory() {
         return tspProviderFactory;
     }
 
