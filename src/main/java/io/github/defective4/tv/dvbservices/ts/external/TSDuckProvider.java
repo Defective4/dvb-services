@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+
 import io.github.defective4.tv.dvbservices.AdapterInfo;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
@@ -30,14 +31,7 @@ public class TSDuckProvider extends TransportStreamProvider {
     public InputStream captureTS(AdapterInfo adapter, String service, boolean audioOnly) throws IOException {
         checkUsed();
         List<String> args = constructInitialParams(adapter);
-        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "--service", service));
-        if (audioOnly) {
-            args.addAll(List.of("-P", "filter", "--video", "--codec", "Teletext", "-n"));
-        } else {
-            args.add("-p");
-            args.add("18");
-        }
-        args.addAll(List.of());
+        args.addAll(List.of("-P", "filter", "-p", "0", "-p", "17", "-p", "18", "--service", service));
         process = ProcessUtils.start(args.toArray(new String[0]));
         return process.getInputStream();
     }
