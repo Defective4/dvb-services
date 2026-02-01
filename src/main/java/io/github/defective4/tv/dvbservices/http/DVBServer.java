@@ -26,6 +26,7 @@ import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Play
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.impl.HybridTransportStreamProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -48,17 +49,25 @@ public class DVBServer {
 
     public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
-//        tspProviderFactory = TSDuckProvider.factory(settings.tools.paths.tspPath);
-        tspProviderFactory = HybridTransportStreamProvider.factory(settings.tools.paths.vlcPath,
-                settings.tools.paths.tspPath);
         if (settings.tools.mediaConverter == null) {
             logger.error("Invalid media converter");
+            System.exit(4);
+            throw new IllegalArgumentException();
+        }
+        if (settings.tools.streamProvider == null) {
+            logger.error("Invalid transport stream prodiver");
             System.exit(4);
             throw new IllegalArgumentException();
         }
         mediaConverterFactory = switch (settings.tools.mediaConverter) {
             case FFMPEG -> FFMpeg.factory(settings.tools.paths.ffmpegPath);
             case VLC -> VLC.factory(settings.tools.paths.vlcPath);
+            default -> throw new IllegalArgumentException();
+        };
+        tspProviderFactory = switch (settings.tools.streamProvider) {
+            case HYBRID ->
+                HybridTransportStreamProvider.factory(settings.tools.paths.vlcPath, settings.tools.paths.tspPath);
+            case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
             default -> throw new IllegalArgumentException();
         };
         String providerName = null;

@@ -73,7 +73,7 @@ public class ServerSettings {
 
     public static class Tools {
         public static enum ConverterType {
-            FFMPEG, VLC
+            FFMPEG, VLC;
         }
 
         public static class Paths {
@@ -82,8 +82,13 @@ public class ServerSettings {
             public String vlcPath = "vlc";
         }
 
+        public static enum StreamProviderType {
+            HYBRID, TSDUCK;
+        }
+
         public ConverterType mediaConverter = ConverterType.FFMPEG;
         public Paths paths = new Paths();
+        public StreamProviderType streamProvider = StreamProviderType.TSDUCK;
     }
 
     public final List<AdapterInfo> adapters = List
