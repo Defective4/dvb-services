@@ -31,7 +31,7 @@ import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
-import io.github.defective4.tv.dvbservices.http.model.CachedResult;
+import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
 import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
@@ -40,7 +40,6 @@ import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaintextPlaylist;
 import io.github.defective4.tv.dvbservices.ts.playlist.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.util.HashUtil;
-import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
@@ -115,7 +114,7 @@ public class MetadataController {
                         if (dataFile.isFile() && !ignoreCache && diff < cache.cacheTTL
                                 && HashUtil.hashEquals(dataFile, binHash)) {
                             try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
-                                CachedResult result = gson.fromJson(reader, CachedResult.class);
+                                MetadataResult result = gson.fromJson(reader, MetadataResult.class);
                                 putResult(adapter, result);
                                 cached.add(adapter);
                                 size++;
@@ -131,26 +130,18 @@ public class MetadataController {
             for (AdapterInfo adapter : adapters) {
                 if (cached.contains(adapter)) continue;
                 try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
-                    File file = TemporaryFiles.getTemporaryFile(".ts");
-                    files.put(adapter, file);
-
-                    ts.dumpPSI(adapter, file,
+                    MetadataResult result = ts.captureMetadata(adapter,
                             TimeUnit.SECONDS.toMillis(server.getSettings().metadata.metaCaptureTimeout));
+                    cache(adapter, ignoreCache, result);
+                    putResult(adapter, result);
                     dumpingProgress++;
-                } catch (IOException e) {
+                } catch (IOException | NotAnMPEGFileException | ParseException e) {
                     e.printStackTrace();
                 }
             }
 
             for (Entry<AdapterInfo, File> entry : files.entrySet()) {
-                try {
-                    CachedResult result = getOrCached(entry.getKey(), entry.getValue(), ignoreCache);
-
-                    putResult(entry.getKey(), result);
-                    entry.getValue().delete();
-                } catch (NotAnMPEGFileException | IOException | ParseException e) {
-                    e.printStackTrace();
-                }
+                entry.getValue().delete();
             }
 
         } finally {
@@ -268,9 +259,7 @@ public class MetadataController {
         server.logClientActivity(ctx, ctx.path());
     }
 
-    private CachedResult getOrCached(AdapterInfo adapter, File file, boolean ignoreCache)
-            throws NotAnMPEGFileException, IOException, ParseException {
-        CachedResult result = null;
+    private void cache(AdapterInfo adapter, boolean ignoreCache, MetadataResult result) throws IOException {
         Cache cache = server.getSettings().cache;
         File dataFile = null;
         File metaFile = null;
@@ -283,7 +272,6 @@ public class MetadataController {
             metaFile = new File(dataFile.getPath() + ".meta");
         }
 
-        result = ElectronicProgramGuide.readEPG(file);
         if (dataFile != null && metaFile != null) {
             try (Writer writer = new FileWriter(dataFile, StandardCharsets.UTF_8)) {
                 gson.toJson(result, writer);
@@ -294,10 +282,9 @@ public class MetadataController {
                 output.write(HashUtil.hash(dataFile));
             }
         }
-        return result;
     }
 
-    private void putResult(AdapterInfo adapter, CachedResult result) {
+    private void putResult(AdapterInfo adapter, MetadataResult result) {
         for (int svc : result.services().keySet()) adapterTable.put(svc, adapter);
         Map<String, List<FriendlyEvent>> events = new LinkedHashMap<>();
         for (Entry<Integer, List<FriendlyEvent>> entry : result.events().entrySet()) {

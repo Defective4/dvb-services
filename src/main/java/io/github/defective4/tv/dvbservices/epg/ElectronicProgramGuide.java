@@ -23,7 +23,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import io.github.defective4.tv.dvbservices.http.model.CachedResult;
+import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
 import nl.digitalekabeltelevisie.data.mpeg.PSI;
 import nl.digitalekabeltelevisie.data.mpeg.TransportStream;
 import nl.digitalekabeltelevisie.data.mpeg.psi.EIT;
@@ -56,7 +56,7 @@ public class ElectronicProgramGuide {
         return writer.toString();
     }
 
-    public static CachedResult readEPG(File tsFile) throws NotAnMPEGFileException, IOException, ParseException {
+    public static MetadataResult readEPG(File tsFile) throws NotAnMPEGFileException, IOException, ParseException {
         TransportStream stream = new TransportStream(tsFile);
         stream.parseStream(null);
         PSI psi = stream.getPsi();
@@ -81,7 +81,7 @@ public class ElectronicProgramGuide {
             }
         }
 
-        return new CachedResult(Collections.unmodifiableMap(events), Collections.unmodifiableMap(pat));
+        return new MetadataResult(Collections.unmodifiableMap(events), Collections.unmodifiableMap(pat));
     }
 
     private static List<Element> createChannelElements(Document doc, Set<String> services) {

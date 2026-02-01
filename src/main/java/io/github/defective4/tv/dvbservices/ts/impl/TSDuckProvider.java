@@ -4,15 +4,20 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
+import io.github.defective4.tv.dvbservices.util.TemporaryFiles;
+import nl.digitalekabeltelevisie.gui.exception.NotAnMPEGFileException;
 
 public class TSDuckProvider implements TransportStreamProvider {
 
@@ -24,6 +29,22 @@ public class TSDuckProvider implements TransportStreamProvider {
 
     protected TSDuckProvider(String tspExecutable) {
         this.tspExecutable = tspExecutable;
+    }
+
+    @Override
+    public MetadataResult captureMetadata(AdapterInfo adapter, long timeout)
+            throws IOException, NotAnMPEGFileException, ParseException {
+        checkUsed();
+        File output = TemporaryFiles.getTemporaryFile("ts");
+        List<String> arguments = constructInitialParams(adapter);
+        arguments
+                .addAll(List.of("-P", "filter", "--psi-si", "-P", "tables", "-p", "0", "-O", "file", output.getPath()));
+        process = ProcessUtils.start(arguments.toArray(new String[0]));
+        try {
+            process.waitFor(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {}
+        close();
+        return ElectronicProgramGuide.readEPG(output);
     }
 
     @Override
@@ -40,18 +61,6 @@ public class TSDuckProvider implements TransportStreamProvider {
         if (process != null) {
             process.destroyForcibly();
         }
-    }
-
-    @Override
-    public void dumpPSI(AdapterInfo adapter, File output, long timeout) throws IOException {
-        checkUsed();
-        List<String> arguments = constructInitialParams(adapter);
-        arguments
-                .addAll(List.of("-P", "filter", "--psi-si", "-P", "tables", "-p", "0", "-O", "file", output.getPath()));
-        process = ProcessUtils.start(arguments.toArray(new String[0]));
-        try {
-            process.waitFor(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {}
     }
 
     @Override
