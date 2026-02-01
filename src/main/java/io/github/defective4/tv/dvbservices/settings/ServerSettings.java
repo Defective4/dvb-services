@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import io.github.defective4.tv.dvbservices.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
@@ -87,7 +87,7 @@ public class ServerSettings {
     }
 
     public final List<AdapterInfo> adapters = List
-            .of(new AdapterInfo("dvb", Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), 538e6f));
+            .of(new AdapterInfo("dvb", null, Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), 538e6f));
     public API api = new API();
     public Cache cache = new Cache();
     public Metadata metadata = new Metadata();

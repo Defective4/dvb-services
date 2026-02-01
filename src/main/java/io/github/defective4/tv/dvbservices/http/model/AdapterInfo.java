@@ -1,17 +1,17 @@
-package io.github.defective4.tv.dvbservices;
+package io.github.defective4.tv.dvbservices.http.model;
 
 import java.util.Map;
 import java.util.Map.Entry;
 import io.github.defective4.tv.dvbservices.util.HashUtil;
 
-public record AdapterInfo(String input, Map<String, String> options, float frequency, String... args) {
+public record AdapterInfo(String driver, String input, Map<String, String> options, float frequency, String... args) {
     public int freq() {
         return (int) frequency;
     }
 
     public String calculateString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(input()).append("_").append(freq()).append("_");
+        builder.append(freq()).append("_");
         StringBuilder opsBuilder = new StringBuilder();
         for (Entry<String, String> entry : options().entrySet())
             opsBuilder.append(entry.getKey() + "_" + entry.getValue());
@@ -28,8 +28,8 @@ public record AdapterInfo(String input, Map<String, String> options, float frequ
     }
 
     @Override
-    public String input() {
-        return input == null ? "file" : input;
+    public String driver() {
+        return driver == null ? "file" : driver;
     }
 
     @Override

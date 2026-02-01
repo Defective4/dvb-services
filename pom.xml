@@ -77,5 +77,10 @@
             <artifactId>javalin-openapi-plugin</artifactId>
             <version>6.7.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.6</version>
+        </dependency>
     </dependencies>
 </project>

@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
-import io.github.defective4.tv.dvbservices.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProviderFactory;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
@@ -22,7 +22,7 @@ public class TSDuckProvider implements TransportStreamProvider {
 
     private InputStream tsStream;
 
-    private TSDuckProvider(String tspExecutable) {
+    protected TSDuckProvider(String tspExecutable) {
         this.tspExecutable = tspExecutable;
     }
 
@@ -68,7 +68,7 @@ public class TSDuckProvider implements TransportStreamProvider {
         }
     }
 
-    private void checkUsed() {
+    protected void checkUsed() {
         if (process != null) throw new IllegalStateException("This stream provider was already used");
     }
 
@@ -76,7 +76,7 @@ public class TSDuckProvider implements TransportStreamProvider {
         List<String> arguments = new ArrayList<>();
         arguments.add(tspExecutable);
         arguments.add("-I");
-        arguments.add(adapter.input());
+        arguments.add(adapter.driver());
         for (Entry<String, String> entry : adapter.options().entrySet()) {
             arguments.add("--" + entry.getKey());
             arguments.add(entry.getValue());
