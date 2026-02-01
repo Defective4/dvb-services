@@ -21,7 +21,7 @@ public class HashUtil {
 
     public static String hash(byte[] data) {
         MD.reset();
-        return mdString(MD.digest());
+        return mdString(MD.digest(data));
     }
 
     public static byte[] hash(File file) throws IOException {

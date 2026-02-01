@@ -88,7 +88,49 @@ public class MetadataController {
             epg.clear();
 
             Map<AdapterInfo, File> files = new LinkedHashMap<>();
+            List<AdapterInfo> cached = new ArrayList<>();
+
+            if (server.getSettings().cache.enableMetadataCache) {
+                Cache cache = server.getSettings().cache;
+                int size = 0;
+                for (AdapterInfo adapter : adapters) {
+                    try {
+                        File dir = cache.getCacheDirectory();
+                        dir.mkdirs();
+
+                        String hash = adapter.calculateString();
+                        File dataFile = new File(dir, hash + ".bin");
+                        File metaFile = new File(dataFile.getPath() + ".meta");
+
+                        long timestamp = 0;
+                        byte[] binHash = new byte[16];
+                        if (metaFile.isFile() && !ignoreCache) {
+                            try (DataInputStream in = new DataInputStream(new FileInputStream(metaFile))) {
+                                timestamp = in.readLong();
+                                in.readFully(binHash);
+                            }
+                        }
+
+                        long diff = (System.currentTimeMillis() - timestamp) / 1000;
+
+                        if (dataFile.isFile() && !ignoreCache && diff < cache.cacheTTL
+                                && HashUtil.hashEquals(dataFile, binHash)) {
+                            try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
+                                Map<String, List<FriendlyEvent>> result = gson.fromJson(reader, Map.class);
+                                putResult(adapter, result);
+                                cached.add(adapter);
+                                size++;
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (size > 0) server.getLogger().info("Found " + size + " cached service(s)");
+            }
+
             for (AdapterInfo adapter : adapters) {
+                if (cached.contains(adapter)) continue;
                 try (TransportStreamProvider ts = server.getTspProviderFactory().create()) {
                     File file = TemporaryFiles.getTemporaryFile(".ts");
                     files.put(adapter, file);
@@ -106,10 +148,8 @@ public class MetadataController {
                     Map<String, List<FriendlyEvent>> result = getOrCached(entry.getKey(), entry.getValue(),
                             ignoreCache);
 
-                    for (String svc : result.keySet()) adapterTable.put(svc, entry.getKey());
+                    putResult(entry.getKey(), result);
                     entry.getValue().delete();
-                    serviceMap.computeIfAbsent(entry.getKey().freq(), t -> new ArrayList<>()).addAll(result.keySet());
-                    epg.putAll(result);
                 } catch (NotAnMPEGFileException | IOException | ParseException e) {
                     e.printStackTrace();
                 }
@@ -231,42 +271,28 @@ public class MetadataController {
         if (cache.enableMetadataCache) {
             File dir = cache.getCacheDirectory();
             dir.mkdirs();
-
             String hash = adapter.calculateString();
             dataFile = new File(dir, hash + ".bin");
             metaFile = new File(dataFile.getPath() + ".meta");
-
-            long timestamp = 0;
-            byte[] binHash = new byte[16];
-            if (metaFile.isFile() && !ignoreCache) {
-                try (DataInputStream in = new DataInputStream(new FileInputStream(metaFile))) {
-                    timestamp = in.readLong();
-                    in.readFully(binHash);
-                }
-            }
-
-            long diff = (System.currentTimeMillis() - timestamp) / 1000;
-
-            if (dataFile.isFile() && !ignoreCache && diff < cache.cacheTTL && HashUtil.hashEquals(dataFile, binHash)) {
-                try (Reader reader = new FileReader(dataFile, StandardCharsets.UTF_8)) {
-                    result = gson.fromJson(reader, Map.class);
-                }
-            }
         }
 
-        if (result == null) {
-            result = ElectronicProgramGuide.readEPG(file);
-            if (dataFile != null && metaFile != null) {
-                try (Writer writer = new FileWriter(dataFile, StandardCharsets.UTF_8)) {
-                    gson.toJson(result, writer);
-                }
+        result = ElectronicProgramGuide.readEPG(file);
+        if (dataFile != null && metaFile != null) {
+            try (Writer writer = new FileWriter(dataFile, StandardCharsets.UTF_8)) {
+                gson.toJson(result, writer);
+            }
 
-                try (DataOutputStream output = new DataOutputStream(new FileOutputStream(metaFile))) {
-                    output.writeLong(System.currentTimeMillis());
-                    output.write(HashUtil.hash(dataFile));
-                }
+            try (DataOutputStream output = new DataOutputStream(new FileOutputStream(metaFile))) {
+                output.writeLong(System.currentTimeMillis());
+                output.write(HashUtil.hash(dataFile));
             }
         }
         return result;
+    }
+
+    private void putResult(AdapterInfo adapter, Map<String, List<FriendlyEvent>> result) {
+        for (String svc : result.keySet()) adapterTable.put(svc, adapter);
+        serviceMap.computeIfAbsent(adapter.freq(), t -> new ArrayList<>()).addAll(result.keySet());
+        epg.putAll(result);
     }
 }
