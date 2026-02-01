@@ -16,9 +16,9 @@ import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
-import io.github.defective4.tv.dvbservices.media.FFMpeg;
 import io.github.defective4.tv.dvbservices.media.MediaConverter;
 import io.github.defective4.tv.dvbservices.media.MediaConverterFactory;
+import io.github.defective4.tv.dvbservices.media.VLC;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
@@ -47,7 +47,8 @@ public class DVBServer {
     public DVBServer(ServerSettings settings) throws IOException {
         this.settings = settings;
         tspProviderFactory = TSDuckProvider.factory(settings.tools.tspPath);
-        mediaConverterFactory = FFMpeg.factory(settings.tools.ffmpegPath);
+//        mediaConverterFactory = FFMpeg.factory(settings.tools.ffmpegPath);
+        mediaConverterFactory = VLC.factory("vlc");
         String providerName = null;
         try (TransportStreamProvider provider = tspProviderFactory.create()) {
             providerName = provider.getFullName();
@@ -64,19 +65,20 @@ public class DVBServer {
         }
         logger.info("Provider " + providerName + " OK");
         if (settings.server.needsTranscoding()) {
+            String cname = null;
             try (MediaConverter conv = mediaConverterFactory.create()) {
-                logger.info("Some media formats need transcording. Checking for ffmpeg");
+                cname = conv.getName();
+                logger.info("Some media formats need transcording. Checking for " + conv.getName());
                 if (!conv.isAvailable()) {
                     throw new IOException();
                 }
             } catch (IOException ex) {
                 settings.server.formats = settings.server.formats.stream().filter(e -> e == MediaFormat.TS).toList();
-                logger.warn("ffmpeg (" + settings.tools.ffmpegPath
-                        + ") is not available. All media formats other than TS are disabled");
+                logger.warn(cname + " is not available. All media formats other than TS are disabled");
             }
-            logger.info("ffmpeg OK");
+            logger.info(cname + " OK");
         } else {
-            logger.info("No transcoding need, ffmpeg check skipped");
+            logger.info("No transcoding need, media converter check skipped");
         }
         streamController = new StreamController(this);
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);

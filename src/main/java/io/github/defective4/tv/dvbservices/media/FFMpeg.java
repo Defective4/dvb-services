@@ -1,5 +1,6 @@
 package io.github.defective4.tv.dvbservices.media;
 
+import static io.github.defective4.tv.dvbservices.media.MediaConverter.copyStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +34,7 @@ public class FFMpeg implements MediaConverter {
 
     @Override
     public void closePeacefully() throws InterruptedException {
-        process.waitFor();
+        if (process != null) process.waitFor();
     }
 
     @Override
@@ -77,6 +78,11 @@ public class FFMpeg implements MediaConverter {
     }
 
     @Override
+    public String getName() {
+        return "ffmpeg";
+    }
+
+    @Override
     public boolean isAvailable() throws IOException {
         Process proc = ProcessUtils.start(ffmpegPath, "-version");
         try (BufferedReader reader = proc.inputReader()) {
@@ -87,16 +93,6 @@ public class FFMpeg implements MediaConverter {
 
     public static MediaConverterFactory<FFMpeg> factory(String ffmpegPath) {
         return () -> new FFMpeg(ffmpegPath);
-    }
-
-    private static void copyStream(InputStream from, OutputStream fo) throws IOException {
-        byte[] buffer = new byte[1024];
-        int read;
-        while (true) {
-            read = from.read(buffer);
-            if (read < 0) break;
-            fo.write(buffer, 0, read);
-        }
     }
 
 }

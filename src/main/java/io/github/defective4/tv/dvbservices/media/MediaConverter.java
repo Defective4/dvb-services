@@ -16,6 +16,19 @@ public interface MediaConverter extends AutoCloseable {
     void convert(InputStream from, OutputStream to, MediaFormat fmt, String... opts)
             throws IOException, InterruptedException, ExecutionException;
 
+    String getName();
+
     boolean isAvailable() throws IOException;
+
+    public static void copyStream(InputStream from, OutputStream fo) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while (true) {
+            read = from.read(buffer);
+            if (read < 0) break;
+            fo.write(buffer, 0, read);
+            fo.flush();
+        }
+    }
 
 }
