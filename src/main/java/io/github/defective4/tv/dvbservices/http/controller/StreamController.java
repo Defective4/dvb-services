@@ -132,6 +132,7 @@ public class StreamController {
 
             server.logClientActivity(ctx, String.format("Started streaming service %s with format %s", service, fmt));
 
+            ctx.contentType(fmt.getMime());
             if (fmt.isVideo()) {
                 byte[] data = new byte[1024];
                 int read;

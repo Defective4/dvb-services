@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -15,10 +14,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.SettingsGenerator;
@@ -59,27 +56,30 @@ public class Main {
             if (cli.hasOption('g')) {
                 SettingsGenerator generator = new SettingsGenerator();
                 ServerSettings existing;
-                if (SETTINGS_FILE.isFile()) switch (Character.toLowerCase(generator.getCli().ask(null,
-                        "You requested to generate new settings, but a settings file already exists at this location\n"
-                                + "What do you want to do?\n" + "(O)verwrite/(E)dit existing file/(A)bort")
-                        .charAt(0))) {
-                    case 'e': {
-                        try (Reader reader = new FileReader(SETTINGS_FILE, StandardCharsets.UTF_8)) {
-                            existing = GSON.fromJson(reader, ServerSettings.class);
+                if (SETTINGS_FILE.isFile())
+                    switch (Character.toLowerCase(generator.getCli().ask(null,
+                            "You requested to generate new settings, but a settings file already exists at this location\n"
+                                    + "What do you want to do?\n" + "(O)verwrite/(E)dit existing file/(A)bort")
+                            .charAt(0))) {
+                        case 'e': {
+                            try (Reader reader = new FileReader(SETTINGS_FILE, StandardCharsets.UTF_8)) {
+                                existing = GSON.fromJson(reader, ServerSettings.class);
+                            }
+                            break;
                         }
-                        break;
+                        case 'o': {
+                            existing = null;
+                            break;
+                        }
+                        case 'a':
+                        default: {
+                            LOGGER.info("Aborted");
+                            System.exit(0);
+                            return;
+                        }
                     }
-                    case 'o': {
-                        existing = null;
-                        break;
-                    }
-                    case 'a':
-                    default: {
-                        LOGGER.info("Aborted");
-                        System.exit(0);
-                        return;
-                    }
-                } else existing = null;
+                else
+                    existing = null;
                 LOGGER.info("Starting interactive settings generation");
                 ServerSettings settings = generator.startInteractiveSetup(existing);
                 try (Writer writer = new FileWriter(SETTINGS_FILE)) {
