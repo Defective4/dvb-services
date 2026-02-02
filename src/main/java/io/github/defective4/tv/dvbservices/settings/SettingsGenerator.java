@@ -46,8 +46,15 @@ public class SettingsGenerator {
                 }
                 builder.append("\n").append("What do you want to do?");
                 switch (cli.ask(
-                        new ChoiceValidator(Map.of('r', "(R)emove", 'a', "(A)dd", 's', "(S)ave", 'b', "A(b)ort")), null,
-                        builder.toString())) {
+                        new ChoiceValidator(
+                                Map.of('r', "(R)emove", 'a', "(A)dd", 's', "(S)ave", 'b', "A(b)ort", 'c', "(C)lear")),
+                        null, builder.toString())) {
+                    case 'c': {
+                        adapters.clear();
+                        System.err.println("Adapter list cleared");
+                        System.err.println();
+                        break;
+                    }
                     case 'r': {
                         if (adapters.isEmpty()) {
                             System.err.println("There are no adapters to remove");
@@ -262,10 +269,10 @@ public class SettingsGenerator {
         Map<String, String> metaOps = new HashMap<>(
                 cli.ask(map(STRING), "delivery-system=dvb-t2, frequency=538000000", "Additional driver options", true));
 
-        AdapterOptions metaBase = new AdapterOptions(metaDriver, metaOps, metaArgs)
-                .merge(defaults.tools.metadataProvider.getInfoGenerator().apply(freq, metaDriver));
-        AdapterOptions tsBase = new AdapterOptions(tsDriver, tsOps, tsArgs)
-                .merge(defaults.tools.streamProvider.getInfoGenerator().apply(freq, tsDriver));
+        AdapterOptions metaBase = defaults.tools.metadataProvider.getInfoGenerator().apply(freq, metaDriver)
+                .merge(new AdapterOptions(metaDriver, metaOps, metaArgs));
+        AdapterOptions tsBase = defaults.tools.streamProvider.getInfoGenerator().apply(freq, tsDriver)
+                .merge(new AdapterOptions(tsDriver, tsOps, tsArgs));
 
         return new AdapterInfo(metaBase, tsBase, freq);
     }
