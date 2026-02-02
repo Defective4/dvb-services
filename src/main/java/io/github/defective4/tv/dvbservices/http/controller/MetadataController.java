@@ -25,8 +25,11 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.transform.TransformerException;
+
 import com.google.gson.Gson;
+
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
@@ -177,7 +180,7 @@ public class MetadataController {
     }
 
     public Optional<AdapterInfo> getServiceAdapter(int frequency) {
-        return adapters.stream().filter(adapter -> adapter.freq() == frequency).findAny();
+        return adapters.stream().filter(adapter -> adapter.frequency() == frequency).findAny();
     }
 
     public Optional<AdapterInfo> getServiceAdapter(TVService service) {

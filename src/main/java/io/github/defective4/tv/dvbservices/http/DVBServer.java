@@ -7,10 +7,13 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
+
+import com.google.gson.GsonBuilder;
 
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
@@ -26,13 +29,11 @@ import io.github.defective4.tv.dvbservices.media.MediaConverterFactory;
 import io.github.defective4.tv.dvbservices.media.VLC;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.ProviderType;
 import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.Provider;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
-import io.github.defective4.tv.dvbservices.ts.impl.DVBV5ScanProvider;
-import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
-import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -71,18 +72,8 @@ public class DVBServer {
             case VLC -> VLC.factory(settings.tools.paths.vlcPath);
             default -> throw new IllegalArgumentException();
         };
-        tspProviderFactory = switch (settings.tools.streamProvider) {
-            case VLC -> VLCTransportStreamProvider.factory(settings.tools.paths.vlcPath);
-            case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
-            default -> throw new IllegalArgumentException(
-                    settings.tools.streamProvider + " can not be used as a stream provider");
-        };
-        metaProviderFactory = switch (settings.tools.metadataProvider) {
-            case TSDUCK -> TSDuckProvider.factory(settings.tools.paths.tspPath);
-            case DVBV5 -> DVBV5ScanProvider.factory(settings.tools.paths.dvbv5ScanPath);
-            default -> throw new IllegalArgumentException(
-                    settings.tools.metadataProvider + " can not be used as a metadata provider");
-        };
+        tspProviderFactory = settings.tools.streamProvider.getAs(TransportStreamProvider.class, settings.tools.paths);
+        metaProviderFactory = settings.tools.metadataProvider.getAs(MetadataProvider.class, settings.tools.paths);
 
         String providerName = null;
         try (Provider provider = tspProviderFactory.create()) {
@@ -134,6 +125,15 @@ public class DVBServer {
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
+            cfg.validation.register(int[].class,
+                    arg0 -> Arrays.asList(arg0.split(",")).stream().mapToInt(Integer::parseInt).toArray());
+            cfg.validation.register(ProviderType.class, arg0 -> {
+                try {
+                    return ProviderType.valueOf(arg0.toUpperCase());
+                } catch (IllegalArgumentException | NullPointerException e2) {
+                    return null;
+                }
+            });
             cfg.registerPlugin(new OpenApiPlugin(ocfg -> {
                 ocfg.withDefinitionConfiguration((t, dcfg) -> {
                     dcfg.withInfo(icfg -> {
@@ -148,7 +148,7 @@ public class DVBServer {
                 });
             }));
             cfg.registerPlugin(new SwaggerPlugin());
-            cfg.jsonMapper(new JavalinGson());
+            cfg.jsonMapper(new JavalinGson(new GsonBuilder().setPrettyPrinting().create(), false));
             cfg.router.apiBuilder(() -> {
                 for (Playlist ps : settings.metadata.playlists) {
                     if (ps.type == null)
@@ -183,6 +183,10 @@ public class DVBServer {
                             get("/services", apiController::getServices);
                             post("/scanner", apiController::handleScanner);
                             get("/epg", apiController::getEPG);
+                        });
+                        path("/config", () -> {
+                            //
+                            get("/generate", apiController::generateConfig);
                         });
                     });
                 }

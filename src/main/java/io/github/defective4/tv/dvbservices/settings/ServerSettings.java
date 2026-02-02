@@ -4,9 +4,15 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
+import io.github.defective4.tv.dvbservices.ts.Provider;
+import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
+import io.github.defective4.tv.dvbservices.ts.impl.DVBV5ScanProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
@@ -85,18 +91,44 @@ public class ServerSettings {
             public String vlcPath = "vlc";
         }
 
-        public static enum StreamProviderType {
-            DVBV5, TSDUCK, VLC;
+        public static enum ProviderType {
+            DVBV5(DVBV5ScanProvider.class), TSDUCK(TSDuckProvider.class), VLC(VLCTransportStreamProvider.class);
+
+            private final Class<? extends Provider> pClass;
+
+            private ProviderType(Class<? extends Provider> pClass) {
+                this.pClass = pClass;
+            }
+
+            public <T extends Provider> ProviderFactory<T> getAs(Class<T> type, Paths paths) {
+                if (type.isAssignableFrom(pClass)) {
+                    try {
+                        return (ProviderFactory<T>) pClass.getMethod("factory", Paths.class).invoke(null, paths);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+                throw new IllegalStateException(String.format("%s can't be used as %s", name(), type.getSimpleName()));
+            }
+
+            public BiFunction<Integer, String, AdapterOptions> getInfoGenerator() {
+                try {
+                    return (BiFunction<Integer, String, AdapterOptions>) pClass.getMethod("infoGenerator").invoke(null);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
         }
 
         public ConverterType mediaConverter = ConverterType.FFMPEG;
-        public StreamProviderType metadataProvider = StreamProviderType.TSDUCK;
+        public ProviderType metadataProvider = ProviderType.TSDUCK;
         public Paths paths = new Paths();
-        public StreamProviderType streamProvider = StreamProviderType.TSDUCK;
+        public ProviderType streamProvider = ProviderType.TSDUCK;
     }
 
-    public final List<AdapterInfo> adapters = List.of(new AdapterInfo(null, new AdapterOptions("dvb",
-            Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), new String[0]), 538e6f));
+    public List<AdapterInfo> adapters = List.of(new AdapterInfo(null,
+            new AdapterOptions("dvb", Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), new String[0]),
+            538e6f));
     public API api = new API();
     public Cache cache = new Cache();
     public Metadata metadata = new Metadata();

@@ -1,20 +1,32 @@
 package io.github.defective4.tv.dvbservices.http.controller;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
+
 import io.github.defective4.tv.dvbservices.http.DVBServer;
 import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
 import io.github.defective4.tv.dvbservices.http.model.APIServices;
 import io.github.defective4.tv.dvbservices.http.model.APIStatus;
+import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
 import io.github.defective4.tv.dvbservices.http.model.AdapterState;
 import io.github.defective4.tv.dvbservices.http.model.EPG;
 import io.github.defective4.tv.dvbservices.http.model.ScannerAction;
 import io.github.defective4.tv.dvbservices.http.model.TVService;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.Paths;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.ProviderType;
+import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
+import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
@@ -34,6 +46,45 @@ public class APIController {
 
     public APIController(DVBServer dvbServer) {
         server = dvbServer;
+    }
+
+    @OpenApi(tags = "API", path = "/api/config/generate", methods = HttpMethod.GET, queryParams = {
+            @OpenApiParam(allowEmptyValue = false, description = "Frequencies to generate adapters for", name = "frequencies", example = "538000000,562000000", required = true),
+            @OpenApiParam(allowEmptyValue = false, description = "TV delivery system", name = "system", example = "dvb-t2", required = false),
+            @OpenApiParam(allowEmptyValue = false, description = "Stream provider type", name = "streamProvider", required = true, type = ProviderType.class),
+            @OpenApiParam(allowEmptyValue = false, description = "Metadata provider type", name = "metadataProvider", required = true, type = ProviderType.class) }, summary = "Generates adapter info config to be inserted in the configuration file")
+    public void generateConfig(Context ctx) {
+        int[] frequencies = ctx.queryParamAsClass("frequencies", int[].class)
+                .getOrThrow((c) -> new IllegalArgumentException("Frequencies list is missing"));
+        String system = ctx.queryParamAsClass("system", String.class).getOrDefault("dvb-t2");
+        ProviderType streamProvider = ctx.queryParamAsClass("streamProvider", ProviderType.class)
+                .getOrThrow(arg0 -> new IllegalArgumentException("Stream provider is missing or invalid"));
+        ProviderType metadataProvider = ctx.queryParamAsClass("metadataProvider", ProviderType.class)
+                .getOrThrow(arg0 -> new IllegalArgumentException("Metadata provider is missing or invalid"));
+
+        streamProvider.getAs(TransportStreamProvider.class, new Paths());
+        metadataProvider.getAs(MetadataProvider.class, new Paths());
+
+        ServerSettings settings = new ServerSettings();
+        try {
+            for (Field field : settings.getClass().getFields()) {
+                if (field.canAccess(settings) && !Modifier.isFinal(field.getModifiers())) field.set(settings, null);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+
+        BiFunction<Integer, String, AdapterOptions> streamInfoGenerator = streamProvider.getInfoGenerator();
+        BiFunction<Integer, String, AdapterOptions> metaInfoGenerator = metadataProvider.getInfoGenerator();
+
+        settings.adapters = new ArrayList<>();
+
+        for (int freq : frequencies) {
+            settings.adapters.add(
+                    new AdapterInfo(metaInfoGenerator.apply(freq, system), streamInfoGenerator.apply(freq, system), freq));
+        }
+
+        ctx.json(settings);
     }
 
     @OpenApi(tags = "API", path = "/api/metadata/epg", security = @OpenApiSecurity(name = "token"), methods = HttpMethod.GET, summary = "Get current EPG", responses = @OpenApiResponse(status = "200", content = @OpenApiContent(from = EPG.class, mimeType = ContentType.JSON)))

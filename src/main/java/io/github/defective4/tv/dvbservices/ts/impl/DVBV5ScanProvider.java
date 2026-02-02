@@ -10,10 +10,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.BiFunction;
+
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
 import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.Paths;
 import io.github.defective4.tv.dvbservices.toml.TOMLReader;
 import io.github.defective4.tv.dvbservices.toml.TOMLWriter;
 import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
@@ -89,8 +92,12 @@ public class DVBV5ScanProvider implements MetadataProvider {
         return true;
     }
 
-    public static ProviderFactory<DVBV5ScanProvider> factory(String dvbv5ScanPath) {
-        return () -> new DVBV5ScanProvider(dvbv5ScanPath);
+    public static ProviderFactory<DVBV5ScanProvider> factory(Paths paths) {
+        return () -> new DVBV5ScanProvider(paths.dvbv5ScanPath);
+    }
+
+    public static BiFunction<Integer, String, AdapterOptions> infoGenerator() {
+        return (f, d) -> new AdapterOptions(d, Map.of(), new String[0]);
     }
 
 }

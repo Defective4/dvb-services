@@ -8,12 +8,16 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
 import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.Paths;
 import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
@@ -100,8 +104,13 @@ public class TSDuckProvider implements TransportStreamProvider, MetadataProvider
         return arguments;
     }
 
-    public static ProviderFactory<TSDuckProvider> factory(String tspExecutable) {
-        return () -> new TSDuckProvider(tspExecutable);
+    public static ProviderFactory<TSDuckProvider> factory(Paths paths) {
+        return () -> new TSDuckProvider(paths.tspPath);
+    }
+
+    public static BiFunction<Integer, String, AdapterOptions> infoGenerator() {
+        return (f, d) -> new AdapterOptions("dvb", Map.of("frequency", Integer.toString(f), "delivery-system", d),
+                new String[0]);
     }
 
 }

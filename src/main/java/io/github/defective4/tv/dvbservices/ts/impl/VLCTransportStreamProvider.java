@@ -3,8 +3,12 @@ package io.github.defective4.tv.dvbservices.ts.impl;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.function.BiFunction;
 
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
+import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
+import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.Paths;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
@@ -52,8 +56,12 @@ public class VLCTransportStreamProvider implements TransportStreamProvider {
         if (process != null) throw new IllegalStateException("This stream provider was already used");
     }
 
-    public static ProviderFactory<VLCTransportStreamProvider> factory(String vlcPath) {
-        return () -> new VLCTransportStreamProvider(vlcPath);
+    public static ProviderFactory<VLCTransportStreamProvider> factory(Paths paths) {
+        return () -> new VLCTransportStreamProvider(paths.vlcPath);
+    }
+
+    public static BiFunction<Integer, String, AdapterOptions> infoGenerator() {
+        return (f, d) -> new AdapterOptions(String.format("%s://frequency=%s", d, f), Map.of(), new String[0]);
     }
 
 }
