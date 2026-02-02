@@ -32,6 +32,7 @@ public class CLIValidators {
             }
             val = (int) Float.parseFloat(str);
             if (val < 0) throw new IllegalArgumentException("Frequency can't be negative");
+            if (val < 1e6f) throw new IllegalArgumentException("Frequency is too low");
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(in + " is not a valid frequency");
         }
