@@ -57,8 +57,31 @@ public class Main {
             }
 
             if (cli.hasOption('g')) {
+                SettingsGenerator generator = new SettingsGenerator();
+                ServerSettings existing;
+                if (SETTINGS_FILE.isFile()) switch (Character.toLowerCase(generator.getCli().ask(null,
+                        "You requested to generate new settings, but a settings file already exists at this location\n"
+                                + "What do you want to do?\n" + "(O)verwrite/(E)dit existing file/(A)bort")
+                        .charAt(0))) {
+                    case 'e': {
+                        try (Reader reader = new FileReader(SETTINGS_FILE, StandardCharsets.UTF_8)) {
+                            existing = GSON.fromJson(reader, ServerSettings.class);
+                        }
+                        break;
+                    }
+                    case 'o': {
+                        existing = null;
+                        break;
+                    }
+                    case 'a':
+                    default: {
+                        LOGGER.info("Aborted");
+                        System.exit(0);
+                        return;
+                    }
+                } else existing = null;
                 LOGGER.info("Starting interactive settings generation");
-                ServerSettings settings = new SettingsGenerator().startInteractiveSetup();
+                ServerSettings settings = generator.startInteractiveSetup(existing);
                 try (Writer writer = new FileWriter(SETTINGS_FILE)) {
                     GSON.toJson(settings, writer);
                     LOGGER.info("Settings saved to " + SETTINGS_FILE.getPath());

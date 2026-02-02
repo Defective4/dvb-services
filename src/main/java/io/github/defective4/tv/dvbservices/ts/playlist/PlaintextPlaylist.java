@@ -6,7 +6,6 @@ import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import io.github.defective4.tv.dvbservices.http.model.TVService;
 
 public class PlaintextPlaylist extends Playlist {

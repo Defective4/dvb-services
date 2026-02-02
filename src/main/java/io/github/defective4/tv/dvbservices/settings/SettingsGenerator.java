@@ -1,14 +1,12 @@
 package io.github.defective4.tv.dvbservices.settings;
 
 import static io.github.defective4.tv.dvbservices.cli.CLIValidators.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import io.github.defective4.tv.dvbservices.cli.CLIValidators;
 import io.github.defective4.tv.dvbservices.cli.CommandLineInput;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
@@ -22,15 +20,62 @@ import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
 public class SettingsGenerator {
+    private final CommandLineInput cli = new CommandLineInput();
 
-    public ServerSettings startInteractiveSetup() {
+    public CommandLineInput getCli() {
+        return cli;
+    }
+
+    public ServerSettings startInteractiveSetup(ServerSettings existing) {
         System.err.println();
-        CommandLineInput cli = new CommandLineInput();
+        ServerSettings defaults = existing == null ? new ServerSettings() : existing;
 
-        ServerSettings defaults = new ServerSettings();
+        boolean save = false;
 
-        switch (Character.toLowerCase(
-                cli.ask(null, "What do you want to configure?\n" + "(E)verything/A(d)apters)/(A)bort").charAt(0))) {
+        if (existing != null) {
+            boolean edit = true;
+            while (edit) {
+                List<AdapterInfo> adapters = existing.getAdapters();
+                System.err.println("There are " + adapters.size() + " adapters in the file:");
+                for (int i = 0; i < adapters.size(); i++) {
+                    System.err.println(" " + i + ". " + adapters.get(i));
+                }
+                System.err.println();
+                switch (Character.toLowerCase(
+                        cli.ask(null, "What do you want to do?\n" + "(R)emove/(A)dd/(S)ave/A(b)ort").charAt(0))) {
+                    case 'r': {
+                        if (adapters.isEmpty()) {
+                            System.err.println("There are no adapters to remove");
+                        } else {
+                            adapters.remove((int) cli.ask(integer(0, adapters.size() - 1), null,
+                                    "Which adapter do you want to remove?"));
+                        }
+                        System.err.println();
+                        break;
+                    }
+                    case 's': {
+                        edit = false;
+                        save = true;
+                        break;
+                    }
+                    case 'a': {
+                        edit = false;
+                        break;
+                    }
+                    case 'b':
+                    default: {
+                        System.err.println("Aborted");
+                        System.exit(0);
+                        return existing;
+                    }
+                }
+            }
+        }
+
+        switch (existing == null
+                ? Character.toLowerCase(cli
+                        .ask(null, "What do you want to configure?\n" + "(E)verything/A(d)apters)/(A)bort").charAt(0))
+                : 'd') {
             case 'e': {
                 // Bind settings
                 defaults.server.bind.host = cli.ask(defaults.server.bind.host, "Server bind address");
@@ -145,9 +190,9 @@ public class SettingsGenerator {
 
             }
             case 'd': {
-                boolean add = false;
-                List<AdapterInfo> adapters = new ArrayList<>();
-                while (true) {
+                boolean add = true;
+                List<AdapterInfo> adapters = new ArrayList<>(defaults.getAdapters());
+                while (!save && add) {
                     add = cli.ask(BOOL, null, String.format("Do you want to add %s adapter?", add ? "another" : "an"));
                     if (!add) break;
                     int freq = cli.ask(FREQUENCY, "538000000, 538e6, 538M", "Adapter frequency");
@@ -182,12 +227,10 @@ public class SettingsGenerator {
                 defaults.adapters = Collections.unmodifiableList(adapters);
                 break;
             }
-            case 'a': {
-                System.exit(0);
-                break;
-            }
+            case 'a':
             default: {
-                System.err.println("Unknown option");
+                System.err.println("Aborted");
+                System.exit(1);
                 break;
             }
         }

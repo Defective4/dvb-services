@@ -3,9 +3,7 @@ package io.github.defective4.tv.dvbservices.settings;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
-
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
 import io.github.defective4.tv.dvbservices.ts.Provider;
@@ -131,9 +129,7 @@ public class ServerSettings {
         public ProviderType streamProvider = ProviderType.TSDUCK;
     }
 
-    public List<AdapterInfo> adapters = List.of(new AdapterInfo(null,
-            new AdapterOptions("dvb", Map.of("delivery-system", "dvb-t2", "frequency", "538000000"), new String[0]),
-            538e6f));
+    public List<AdapterInfo> adapters = List.of();
     public API api = new API();
     public Cache cache = new Cache();
     public Metadata metadata = new Metadata();

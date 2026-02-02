@@ -5,7 +5,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
-
 import io.github.defective4.tv.dvbservices.http.model.TVService;
 
 public abstract class Playlist {

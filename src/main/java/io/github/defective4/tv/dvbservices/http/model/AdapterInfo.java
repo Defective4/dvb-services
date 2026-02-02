@@ -3,7 +3,6 @@ package io.github.defective4.tv.dvbservices.http.model;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import io.github.defective4.tv.dvbservices.util.HashUtil;
 
 public record AdapterInfo(AdapterOptions metadataCaptureOptions, AdapterOptions streamOptions, float frequency) {
