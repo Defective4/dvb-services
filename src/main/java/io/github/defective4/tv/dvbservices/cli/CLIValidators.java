@@ -32,7 +32,7 @@ public class CLIValidators {
             }
             val = (int) Float.parseFloat(str);
             if (val < 0) throw new IllegalArgumentException("Frequency can't be negative");
-            if (val < 1e6f) throw new IllegalArgumentException("Frequency is too low");
+            if (val * multiplier < 1e6f) throw new IllegalArgumentException("Frequency is too low");
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(in + " is not a valid frequency");
         }
@@ -80,7 +80,9 @@ public class CLIValidators {
         return in -> {
             if (in.isBlank()) return List.of();
             String[] parts = in.split(",");
-            return Arrays.stream(parts).map(part -> validator.apply(part.trim())).toList();
+            if (Arrays.stream(parts).filter(t -> !t.isBlank()).count() == 0)
+                throw new IllegalArgumentException("The list is empty");
+            return Arrays.stream(parts).filter(t -> !t.isBlank()).map(part -> validator.apply(part.trim())).toList();
         };
     }
 
