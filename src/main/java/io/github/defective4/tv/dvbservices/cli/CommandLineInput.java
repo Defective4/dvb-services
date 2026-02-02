@@ -18,8 +18,11 @@ public class CommandLineInput {
             if (example != null) System.err.println(" Example: " + example);
             if (validator == CLIValidators.BOOL)
                 System.err.print("[y/n] ");
-            else
+            else {
+                if (validator instanceof ChoiceValidator choice)
+                    System.err.println(String.join("/", choice.getChoices().values().toArray(new String[0])));
                 System.err.print("> ");
+            }
             String response;
             try {
                 response = cliReader.readLine();

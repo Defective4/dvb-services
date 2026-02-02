@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import io.github.defective4.tv.dvbservices.cli.CLIValidators;
+import io.github.defective4.tv.dvbservices.cli.ChoiceValidator;
 import io.github.defective4.tv.dvbservices.cli.CommandLineInput;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
@@ -36,13 +37,15 @@ public class SettingsGenerator {
             boolean edit = true;
             while (edit) {
                 List<AdapterInfo> adapters = existing.getAdapters();
-                System.err.println("There are " + adapters.size() + " adapters in the file:");
+                StringBuilder builder = new StringBuilder();
+                builder.append("There are ").append(adapters.size()).append(" adapters in the file:").append("\n");
                 for (int i = 0; i < adapters.size(); i++) {
-                    System.err.println(" " + i + ". " + adapters.get(i));
+                    builder.append(" ").append(i).append(". ").append(adapters.get(i)).append("\n\n");
                 }
-                System.err.println();
-                switch (Character.toLowerCase(
-                        cli.ask(null, "What do you want to do?\n" + "(R)emove/(A)dd/(S)ave/A(b)ort").charAt(0))) {
+                builder.append("What do you want to do?");
+                switch (cli.ask(
+                        new ChoiceValidator(Map.of('r', "(R)emove", 'a', "(A)dd", 's', "(S)ave", 'b', "A(b)ort")), null,
+                        builder.toString())) {
                     case 'r': {
                         if (adapters.isEmpty()) {
                             System.err.println("There are no adapters to remove");
@@ -72,10 +75,9 @@ public class SettingsGenerator {
             }
         }
 
-        switch (existing == null
-                ? Character.toLowerCase(cli
-                        .ask(null, "What do you want to configure?\n" + "(E)verything/A(d)apters)/(A)bort").charAt(0))
-                : 'd') {
+        switch (existing != null ? 'd'
+                : cli.ask(new ChoiceValidator(Map.of('e', "(E)verything", 'd', "A(d)apters", 'a', "(A)bort")), null,
+                        "What do you want to configure?")) {
             case 'e': {
                 // Bind settings
                 defaults.server.bind.host = cli.ask(defaults.server.bind.host, "Server bind address");
@@ -192,8 +194,8 @@ public class SettingsGenerator {
             case 'd': {
                 boolean add = true;
                 List<AdapterInfo> adapters = new ArrayList<>(defaults.getAdapters());
+
                 while (!save && add) {
-                    add = cli.ask(BOOL, null, String.format("Do you want to add %s adapter?", add ? "another" : "an"));
                     if (!add) break;
                     int freq = cli.ask(FREQUENCY, "538000000, 538e6, 538M", "Adapter frequency");
 
@@ -222,6 +224,7 @@ public class SettingsGenerator {
                             join(streamOptions.args(), tsArgs));
 
                     adapters.add(new AdapterInfo(metaOptions, streamOptions, freq));
+                    add = cli.ask(BOOL, null, String.format("Do you want to add another adapter?"));
                 }
 
                 defaults.adapters = Collections.unmodifiableList(adapters);
