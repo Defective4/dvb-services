@@ -17,14 +17,14 @@ import java.util.concurrent.Future;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
-public class FFMpeg implements MediaConverter {
+public class FFMpegMediaConverter implements MediaConverter {
 
     private static final String VERESION_STRING = "ffmpeg version ";
     private final String ffmpegPath;
     private Process process;
     private final ExecutorService service = Executors.newFixedThreadPool(2);
 
-    private FFMpeg(String ffmpegPath) {
+    private FFMpegMediaConverter(String ffmpegPath) {
         this.ffmpegPath = ffmpegPath;
     }
 
@@ -101,8 +101,8 @@ public class FFMpeg implements MediaConverter {
         return true;
     }
 
-    public static MediaConverterFactory<FFMpeg> factory(String ffmpegPath) {
-        return () -> new FFMpeg(ffmpegPath);
+    public static MediaConverterFactory<FFMpegMediaConverter> factory(String ffmpegPath) {
+        return () -> new FFMpegMediaConverter(ffmpegPath);
     }
 
 }

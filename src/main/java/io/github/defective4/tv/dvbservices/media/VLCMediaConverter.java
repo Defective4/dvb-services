@@ -13,13 +13,13 @@ import java.util.concurrent.Executors;
 import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
-public class VLC implements MediaConverter {
+public class VLCMediaConverter implements MediaConverter {
 
     private Process process;
     private final ExecutorService service = Executors.newSingleThreadExecutor();
     private final String vlcPath;
 
-    private VLC(String vlcPath) {
+    private VLCMediaConverter(String vlcPath) {
         this.vlcPath = vlcPath;
     }
 
@@ -72,8 +72,8 @@ public class VLC implements MediaConverter {
         return fmt.getMux() != null;
     }
 
-    public static MediaConverterFactory<VLC> factory(String vlcPath) {
-        return () -> new VLC(vlcPath);
+    public static MediaConverterFactory<VLCMediaConverter> factory(String vlcPath) {
+        return () -> new VLCMediaConverter(vlcPath);
     }
 
 }

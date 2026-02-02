@@ -23,10 +23,10 @@ import io.github.defective4.tv.dvbservices.http.exception.APIReadOnlyException;
 import io.github.defective4.tv.dvbservices.http.exception.AdapterUnavailableException;
 import io.github.defective4.tv.dvbservices.http.exception.NotFoundException;
 import io.github.defective4.tv.dvbservices.http.exception.UnauthorizedException;
-import io.github.defective4.tv.dvbservices.media.FFMpeg;
+import io.github.defective4.tv.dvbservices.media.FFMpegMediaConverter;
 import io.github.defective4.tv.dvbservices.media.MediaConverter;
 import io.github.defective4.tv.dvbservices.media.MediaConverterFactory;
-import io.github.defective4.tv.dvbservices.media.VLC;
+import io.github.defective4.tv.dvbservices.media.VLCMediaConverter;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.ProviderType;
@@ -68,8 +68,8 @@ public class DVBServer {
             throw new IllegalArgumentException();
         }
         mediaConverterFactory = switch (settings.tools.mediaConverter) {
-            case FFMPEG -> FFMpeg.factory(settings.tools.paths.ffmpegPath);
-            case VLC -> VLC.factory(settings.tools.paths.vlcPath);
+            case FFMPEG -> FFMpegMediaConverter.factory(settings.tools.paths.ffmpegPath);
+            case VLC -> VLCMediaConverter.factory(settings.tools.paths.vlcPath);
             default -> throw new IllegalArgumentException();
         };
         tspProviderFactory = settings.tools.streamProvider.getAs(TransportStreamProvider.class, settings.tools.paths);
