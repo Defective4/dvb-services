@@ -1,6 +1,6 @@
 package io.github.defective4.tv.dvbservices.ts.playlist;
 
-import static io.github.defective4.tv.dvbservices.util.DOMUtils.createAndAppendElement;
+import static io.github.defective4.tv.dvbservices.util.DOMUtils.*;
 
 import java.io.IOException;
 import java.io.StringWriter;

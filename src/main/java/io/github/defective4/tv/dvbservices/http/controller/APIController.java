@@ -80,8 +80,8 @@ public class APIController {
         settings.adapters = new ArrayList<>();
 
         for (int freq : frequencies) {
-            settings.adapters.add(
-                    new AdapterInfo(metaInfoGenerator.apply(freq, system), streamInfoGenerator.apply(freq, system), freq));
+            settings.adapters.add(new AdapterInfo(metaInfoGenerator.apply(freq, system),
+                    streamInfoGenerator.apply(freq, system), freq));
         }
 
         ctx.json(settings);

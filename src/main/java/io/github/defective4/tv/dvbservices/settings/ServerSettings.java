@@ -54,7 +54,7 @@ public class ServerSettings {
 
         public int metaCaptureIntervalMinutes = 1440;
         public int metaCaptureTimeout = 30;
-        public List<Playlist> playlists = List.of(new Playlist(PlaylistType.M3U), new Playlist(PlaylistType.XSPF));
+        public List<Playlist> playlists = List.of();
         public boolean scheduleMetaCapture = true;
         public boolean serveXMLTV = true;
     }
@@ -101,14 +101,15 @@ public class ServerSettings {
             }
 
             public <T extends Provider> ProviderFactory<T> getAs(Class<T> type, Paths paths) {
-                if (type.isAssignableFrom(pClass)) {
+                if (isOfType(type)) {
                     try {
                         return (ProviderFactory<T>) pClass.getMethod("factory", Paths.class).invoke(null, paths);
                     } catch (Exception e) {
                         throw new IllegalStateException(e);
                     }
                 }
-                throw new IllegalStateException(String.format("%s can't be used as %s", name(), type.getSimpleName()));
+                throw new IllegalArgumentException(
+                        String.format("%s can't be used as %s", name(), type.getSimpleName()));
             }
 
             public BiFunction<Integer, String, AdapterOptions> getInfoGenerator() {
@@ -117,6 +118,10 @@ public class ServerSettings {
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
                 }
+            }
+
+            public <T extends Provider> boolean isOfType(Class<T> type) {
+                return type.isAssignableFrom(pClass);
             }
         }
 

@@ -1,7 +1,6 @@
 package io.github.defective4.tv.dvbservices.epg;
 
-import static io.github.defective4.tv.dvbservices.util.DOMUtils.DOC_BUILDER;
-import static io.github.defective4.tv.dvbservices.util.DOMUtils.XMLTV_TRANSFORMER;
+import static io.github.defective4.tv.dvbservices.util.DOMUtils.*;
 
 import java.io.File;
 import java.io.IOException;

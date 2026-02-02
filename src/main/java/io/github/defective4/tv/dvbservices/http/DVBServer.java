@@ -1,8 +1,6 @@
 package io.github.defective4.tv.dvbservices.http;
 
-import static io.javalin.apibuilder.ApiBuilder.get;
-import static io.javalin.apibuilder.ApiBuilder.path;
-import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.*;
 
 import java.io.IOException;
 import java.text.DateFormat;
