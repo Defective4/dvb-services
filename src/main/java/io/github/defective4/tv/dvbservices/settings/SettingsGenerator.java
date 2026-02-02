@@ -197,20 +197,34 @@ public class SettingsGenerator {
                 boolean add = true;
                 List<AdapterInfo> adapters = new ArrayList<>(defaults.getAdapters());
 
-                switch (cli.ask(new ChoiceValidator(Map.of('y', "(Y)es", 'n', "(N)o", 'q', "(Q)uick setup")), null,
-                        "Do you want to setup adapters?")) {
+                if (!save) switch (cli.ask(new ChoiceValidator(Map.of('y', "(Y)es", 'n', "(N)o", 'q', "(Q)uick setup")),
+                        null, "Do you want to setup adapters?")) {
                     case 'q': {
                         List<Integer> frequencies = cli.ask(list(FREQUENCY), "538M, 562M",
                                 "Comma-separated list of adapter frequencies (Hz)");
-                        AdapterInfo base = constructAdapterInfo(defaults, 0);
+                        String tsDriver = cli.ask("dvb-t2", "Stream provider delivery system");
+                        String[] tsArgs = cli.ask(list(STRING), null, "Additional driver arguments", true)
+                                .toArray(new String[0]);
+                        Map<String, String> tsOps = new HashMap<>(cli.ask(map(STRING),
+                                "delivery-system=dvb-t2, frequency=538000000", "Additional driver options", true));
+
+                        String metaDriver = cli.ask("dvb-t2", "Metadata provider delivery system");
+                        String[] metaArgs = cli.ask(list(STRING), null, "Additional driver arguments", true)
+                                .toArray(new String[0]);
+                        Map<String, String> metaOps = new HashMap<>(cli.ask(map(STRING),
+                                "delivery-system=dvb-t2, frequency=538000000", "Additional driver options", true));
+
                         for (int freq : frequencies) {
-                            adapters.add(base.clone(freq));
+                            AdapterOptions metaBase = defaults.tools.metadataProvider.getInfoGenerator()
+                                    .apply(freq, metaDriver).merge(new AdapterOptions(metaDriver, metaOps, metaArgs));
+                            AdapterOptions tsBase = defaults.tools.streamProvider.getInfoGenerator()
+                                    .apply(freq, tsDriver).merge(new AdapterOptions(tsDriver, tsOps, tsArgs));
+                            adapters.add(new AdapterInfo(metaBase, tsBase, freq));
                         }
                         break;
                     }
                     case 'y': {
-                        while (!save && add) {
-                            if (!add) break;
+                        while (add) {
                             int freq = cli.ask(FREQUENCY, "538000000, 538e6, 538M", "Adapter frequency (Hz)");
 
                             adapters.add(constructAdapterInfo(defaults, freq));
@@ -238,26 +252,22 @@ public class SettingsGenerator {
     }
 
     private AdapterInfo constructAdapterInfo(ServerSettings defaults, int freq) {
-        String tsDriver = cli.ask("dvb-t2", "Stream provider driver");
+        String tsDriver = cli.ask("dvb-t2", "Stream provider delivery system");
         String[] tsArgs = cli.ask(list(STRING), null, "Additional driver arguments", true).toArray(new String[0]);
         Map<String, String> tsOps = new HashMap<>(
                 cli.ask(map(STRING), "delivery-system=dvb-t2, frequency=538000000", "Additional driver options", true));
 
-        String metaDriver = cli.ask("dvb-t2", "Metadata provider driver");
+        String metaDriver = cli.ask("dvb-t2", "Metadata provider delivery system");
         String[] metaArgs = cli.ask(list(STRING), null, "Additional driver arguments", true).toArray(new String[0]);
         Map<String, String> metaOps = new HashMap<>(
                 cli.ask(map(STRING), "delivery-system=dvb-t2, frequency=538000000", "Additional driver options", true));
 
-        AdapterOptions metaOptions = defaults.tools.metadataProvider.getInfoGenerator().apply(freq, metaDriver);
-        AdapterOptions streamOptions = defaults.tools.streamProvider.getInfoGenerator().apply(freq, tsDriver);
+        AdapterOptions metaBase = new AdapterOptions(metaDriver, metaOps, metaArgs)
+                .merge(defaults.tools.metadataProvider.getInfoGenerator().apply(freq, metaDriver));
+        AdapterOptions tsBase = new AdapterOptions(tsDriver, tsOps, tsArgs)
+                .merge(defaults.tools.streamProvider.getInfoGenerator().apply(freq, tsDriver));
 
-        metaOps.putAll(metaOptions.options());
-        tsOps.putAll(streamOptions.options());
-
-        metaOptions = new AdapterOptions(metaOptions.driver(), metaOps, join(metaOptions.args(), metaArgs));
-        streamOptions = new AdapterOptions(streamOptions.driver(), tsOps, join(streamOptions.args(), tsArgs));
-
-        return new AdapterInfo(metaOptions, streamOptions, freq);
+        return new AdapterInfo(metaBase, tsBase, freq);
     }
 
     private static String[] join(String[] arr1, String[] arr2) {
