@@ -1,14 +1,18 @@
 package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
+
 import com.google.gson.GsonBuilder;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -113,7 +117,7 @@ public class DVBServer {
                 logger.warn(cname + " is not available. All media formats other than TS are disabled");
             }
         } else {
-            logger.info("No transcoding need, media converter check skipped");
+            logger.info("No transcoding needed, media converter check skipped");
         }
         streamController = new StreamController(this);
         metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);

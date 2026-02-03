@@ -1,6 +1,7 @@
 package io.github.defective4.tv.dvbservices.media;
 
 import static io.github.defective4.tv.dvbservices.media.MediaConverter.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

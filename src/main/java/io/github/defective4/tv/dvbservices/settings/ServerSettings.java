@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
+
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
 import io.github.defective4.tv.dvbservices.media.MediaFormat;
@@ -12,6 +13,7 @@ import io.github.defective4.tv.dvbservices.ts.Provider;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.impl.DVBV5ScanProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
+import io.github.defective4.tv.dvbservices.ts.impl.TestMetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
 
 public class ServerSettings {
@@ -90,7 +92,8 @@ public class ServerSettings {
         }
 
         public static enum ProviderType {
-            DVBV5(DVBV5ScanProvider.class), TSDUCK(TSDuckProvider.class), VLC(VLCTransportStreamProvider.class);
+            DVBV5(DVBV5ScanProvider.class), TEST(TestMetadataProvider.class), TSDUCK(TSDuckProvider.class),
+            VLC(VLCTransportStreamProvider.class);
 
             private final Class<? extends Provider> pClass;
 
