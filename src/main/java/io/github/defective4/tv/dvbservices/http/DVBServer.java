@@ -157,6 +157,7 @@ public class DVBServer {
                             case M3U -> metadataController.serveM3U(ctx, title, fmt);
                             case XSPF -> metadataController.serveXSPF(ctx, title, fmt);
                             case TEXT -> metadataController.serveTextPlaylist(ctx, fmt);
+                            case PLS -> metadataController.servePLSPlaylist(ctx, fmt);
                             default -> { throw new IllegalArgumentException("Unknown playlist type " + ps.type); }
                         }
                     });

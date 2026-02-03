@@ -36,6 +36,7 @@ import io.github.defective4.tv.dvbservices.http.model.MetadataResult;
 import io.github.defective4.tv.dvbservices.http.model.TVService;
 import io.github.defective4.tv.dvbservices.media.MediaFormat;
 import io.github.defective4.tv.dvbservices.playlist.M3UPlaylist;
+import io.github.defective4.tv.dvbservices.playlist.PLSPlaylist;
 import io.github.defective4.tv.dvbservices.playlist.PlaintextPlaylist;
 import io.github.defective4.tv.dvbservices.playlist.XSPFPlaylist;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Cache;
@@ -230,6 +231,14 @@ public class MetadataController {
     public void serveM3U(Context ctx, String title, MediaFormat format) {
         ctx.contentType(M3U_MIME);
         ctx.result(new M3UPlaylist(serviceMap, getBaseURL(ctx)).save(title, format));
+        server.logClientActivity(ctx, ctx.path());
+    }
+
+    @OpenApi(tags = "Metadata", path = "/playlist/{playlist}.pls", methods = HttpMethod.GET, pathParams = @OpenApiParam(allowEmptyValue = false, description = "Playlist name", example = "tv", name = "playlist", required = true), responses = {
+            @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = "audio/x-scpls")) })
+    public void servePLSPlaylist(Context ctx, MediaFormat format) throws IOException {
+        ctx.contentType("audio/x-scpls");
+        ctx.result(new PLSPlaylist(serviceMap, getBaseURL(ctx)).save(null, format));
         server.logClientActivity(ctx, ctx.path());
     }
 
