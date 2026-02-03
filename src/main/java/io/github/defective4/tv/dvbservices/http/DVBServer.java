@@ -1,18 +1,14 @@
 package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
-
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
-
 import com.google.gson.GsonBuilder;
-
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -120,7 +116,7 @@ public class DVBServer {
             logger.info("No transcoding needed, media converter check skipped");
         }
         streamController = new StreamController(this);
-        metadataController = new MetadataController(settings.getAdapters(), settings.server.baseURL, this);
+        metadataController = new MetadataController(settings.getAdapters(), this);
         apiController = new APIController(this);
         javalin = Javalin.create(cfg -> {
             cfg.validation.register(int[].class,
@@ -142,7 +138,6 @@ public class DVBServer {
                         icfg.title("DVB Services API");
                     });
                     dcfg.withSecurity(scfg -> scfg.withBearerAuth("token"));
-                    dcfg.withServer(scfg -> scfg.url(settings.server.baseURL));
                 });
             }));
             cfg.registerPlugin(new SwaggerPlugin());

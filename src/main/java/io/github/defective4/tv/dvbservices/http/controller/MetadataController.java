@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -25,11 +26,8 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.transform.TransformerException;
-
 import com.google.gson.Gson;
-
 import io.github.defective4.tv.dvbservices.epg.ElectronicProgramGuide;
 import io.github.defective4.tv.dvbservices.epg.FriendlyEvent;
 import io.github.defective4.tv.dvbservices.http.DVBServer;
@@ -60,7 +58,6 @@ public class MetadataController {
     private final List<AdapterInfo> adapters;
 
     private final Map<Integer, AdapterInfo> adapterTable = new HashMap<>();
-    private final String baseURL;
     private int dumpingProgress;
     private final Map<String, List<FriendlyEvent>> epg = new LinkedHashMap<>();
     private final Gson gson = new Gson();
@@ -69,8 +66,7 @@ public class MetadataController {
     private final Map<Integer, Collection<TVService>> serviceMap = new LinkedHashMap<>();
     private final Timer timer = new Timer(true);
 
-    public MetadataController(List<AdapterInfo> adapters, String baseURL, DVBServer server) {
-        this.baseURL = baseURL;
+    public MetadataController(List<AdapterInfo> adapters, DVBServer server) {
         this.adapters = Collections.unmodifiableList(adapters);
         this.server = server;
     }
@@ -233,7 +229,7 @@ public class MetadataController {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = M3U_MIME)) })
     public void serveM3U(Context ctx, String title, MediaFormat format) {
         ctx.contentType(M3U_MIME);
-        ctx.result(new M3UPlaylist(serviceMap, baseURL).save(title, format));
+        ctx.result(new M3UPlaylist(serviceMap, getBaseURL(ctx)).save(title, format));
         server.logClientActivity(ctx, ctx.path());
     }
 
@@ -241,7 +237,7 @@ public class MetadataController {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.PLAIN)) })
     public void serveTextPlaylist(Context ctx, MediaFormat format) throws IOException {
         ctx.contentType(ContentType.TEXT_PLAIN);
-        ctx.result(new PlaintextPlaylist(serviceMap, baseURL).save(null, format));
+        ctx.result(new PlaintextPlaylist(serviceMap, getBaseURL(ctx)).save(null, format));
         server.logClientActivity(ctx, ctx.path());
     }
 
@@ -258,7 +254,7 @@ public class MetadataController {
             @OpenApiResponse(status = "200", content = @OpenApiContent(mimeType = ContentType.PLAIN)) })
     public void serveXSPF(Context ctx, String title, MediaFormat format) throws IOException {
         ctx.contentType(XSPF_MIME);
-        ctx.result(new XSPFPlaylist(serviceMap, baseURL).save(title, format));
+        ctx.result(new XSPFPlaylist(serviceMap, getBaseURL(ctx)).save(title, format));
         server.logClientActivity(ctx, ctx.path());
     }
 
@@ -298,5 +294,10 @@ public class MetadataController {
         serviceMap.computeIfAbsent(adapter.freq(), t -> new ArrayList<>()).addAll(
                 result.services().entrySet().stream().map(e -> new TVService(e.getValue(), e.getKey())).toList());
         epg.putAll(events);
+    }
+
+    private static String getBaseURL(Context ctx) {
+        URI uri = URI.create(ctx.url());
+        return String.format("%s://%s:%s", uri.getScheme(), uri.getHost(), uri.getPort());
     }
 }

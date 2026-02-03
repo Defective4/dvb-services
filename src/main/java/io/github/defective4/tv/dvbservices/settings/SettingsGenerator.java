@@ -1,15 +1,12 @@
 package io.github.defective4.tv.dvbservices.settings;
 
 import static io.github.defective4.tv.dvbservices.cli.CLIValidators.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.github.defective4.tv.dvbservices.cli.CLIValidators;
 import io.github.defective4.tv.dvbservices.cli.ChoiceValidator;
 import io.github.defective4.tv.dvbservices.cli.CommandLineInput;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
@@ -92,8 +89,6 @@ public class SettingsGenerator {
                 defaults.server.bind.host = cli.ask(defaults.server.bind.host, "Server bind address");
                 defaults.server.bind.port = cli.ask(integer(1, Short.MAX_VALUE), defaults.server.bind.port,
                         "Server bind port");
-                defaults.server.baseURL = cli.ask(CLIValidators.URL, defaults.server.baseURL,
-                        "Server base URL used for access from outside.").toString();
 
                 // Metadata settings
                 defaults.metadata.scheduleMetaCapture = cli.ask(BOOL, defaults.metadata.scheduleMetaCapture,
