@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
+
 import io.github.defective4.tv.dvbservices.util.ProcessUtils;
 
 public class VLCMediaConverter implements MediaConverter {

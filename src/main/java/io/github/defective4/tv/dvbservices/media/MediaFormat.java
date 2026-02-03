@@ -1,4 +1,4 @@
-package io.github.defective4.tv.dvbservices.ts.playlist;
+package io.github.defective4.tv.dvbservices.media;
 
 import io.javalin.http.ContentType;
 

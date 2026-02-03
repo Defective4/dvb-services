@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.function.BiFunction;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
+import io.github.defective4.tv.dvbservices.media.MediaFormat;
+import io.github.defective4.tv.dvbservices.playlist.PlaylistType;
 import io.github.defective4.tv.dvbservices.ts.Provider;
 import io.github.defective4.tv.dvbservices.ts.ProviderFactory;
 import io.github.defective4.tv.dvbservices.ts.impl.DVBV5ScanProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.TSDuckProvider;
 import io.github.defective4.tv.dvbservices.ts.impl.VLCTransportStreamProvider;
-import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
-import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
 public class ServerSettings {
 

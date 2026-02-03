@@ -14,13 +14,13 @@ import io.github.defective4.tv.dvbservices.cli.ChoiceValidator;
 import io.github.defective4.tv.dvbservices.cli.CommandLineInput;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
 import io.github.defective4.tv.dvbservices.http.model.AdapterOptions;
+import io.github.defective4.tv.dvbservices.media.MediaFormat;
+import io.github.defective4.tv.dvbservices.playlist.PlaylistType;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Metadata.Playlist;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.ConverterType;
 import io.github.defective4.tv.dvbservices.settings.ServerSettings.Tools.ProviderType;
 import io.github.defective4.tv.dvbservices.ts.MetadataProvider;
 import io.github.defective4.tv.dvbservices.ts.TransportStreamProvider;
-import io.github.defective4.tv.dvbservices.ts.playlist.MediaFormat;
-import io.github.defective4.tv.dvbservices.ts.playlist.PlaylistType;
 
 public class SettingsGenerator {
     private final CommandLineInput cli = new CommandLineInput();
