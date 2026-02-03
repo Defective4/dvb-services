@@ -172,6 +172,8 @@ public class SettingsGenerator {
                             "Additional command line parameters to pass to the audio converter.", true);
                     if (!params.equalsIgnoreCase("none")) defaults.server.audio.converterParams = params;
                 }
+            }
+            case 'd': {
 
                 // Provider settings
 
@@ -198,9 +200,6 @@ public class SettingsGenerator {
                         + "It will be used to capture TV metadata, such as service list and EPG.\n"
                         + "Available values: " + Arrays.toString(Arrays.stream(ProviderType.values())
                                 .filter(type -> type.isOfType(MetadataProvider.class)).toArray(ProviderType[]::new)));
-
-            }
-            case 'd': {
                 boolean add = true;
                 List<AdapterInfo> adapters = new ArrayList<>(defaults.getAdapters());
 
