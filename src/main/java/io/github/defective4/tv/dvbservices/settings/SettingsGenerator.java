@@ -1,12 +1,14 @@
 package io.github.defective4.tv.dvbservices.settings;
 
 import static io.github.defective4.tv.dvbservices.cli.CLIValidators.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import io.github.defective4.tv.dvbservices.cli.ChoiceValidator;
 import io.github.defective4.tv.dvbservices.cli.CommandLineInput;
 import io.github.defective4.tv.dvbservices.http.model.AdapterInfo;
@@ -168,6 +170,7 @@ public class SettingsGenerator {
                     if (!params.equalsIgnoreCase("none")) defaults.server.audio.converterParams = params;
                 }
             }
+            //$FALL-THROUGH$
             case 'd': {
 
                 // Provider settings
