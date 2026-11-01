@@ -1,14 +1,18 @@
 package io.github.defective4.tv.dvbservices.http;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.simple.SimpleLoggerFactory;
+
 import com.google.gson.GsonBuilder;
+
 import io.github.defective4.tv.dvbservices.http.controller.APIController;
 import io.github.defective4.tv.dvbservices.http.controller.ExceptionController;
 import io.github.defective4.tv.dvbservices.http.controller.MetadataController;
@@ -142,7 +146,7 @@ public class DVBServer {
             }));
             cfg.registerPlugin(new SwaggerPlugin());
             cfg.jsonMapper(new JavalinGson(new GsonBuilder().setPrettyPrinting().create(), false));
-            cfg.router.apiBuilder(() -> {
+            cfg.routes.apiBuilder(() -> {
                 for (Playlist ps : settings.metadata.playlists) {
                     if (ps.type == null)
                         throw new IllegalArgumentException("One of the playlists has an unknown type.");
@@ -158,12 +162,15 @@ public class DVBServer {
                             case XSPF -> metadataController.serveXSPF(ctx, title, fmt);
                             case TEXT -> metadataController.serveTextPlaylist(ctx, fmt);
                             case PLS -> metadataController.servePLSPlaylist(ctx, fmt);
-                            default -> { throw new IllegalArgumentException("Unknown playlist type " + ps.type); }
+                            default -> {
+                                throw new IllegalArgumentException("Unknown playlist type " + ps.type);
+                            }
                         }
                     });
                 }
-                path("/meta",
-                        () -> { if (settings.metadata.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV); });
+                path("/meta", () -> {
+                    if (settings.metadata.serveXMLTV) get("/epg.xml", metadataController::serveXMLTV);
+                });
 
                 path("/stream", () -> {
                     get("/{frequency}/{service}", streamController::serveVideoExact);
@@ -185,16 +192,17 @@ public class DVBServer {
                     });
                 }
             });
+            
+            cfg.routes.exception(IllegalStateException.class, exceptionController::handleStateException);
+            cfg.routes.exception(IllegalArgumentException.class, exceptionController::handleArgumentException);
+            cfg.routes.exception(NotFoundException.class, exceptionController::handleNotFoundException);
+            cfg.routes.exception(AdapterUnavailableException.class,
+                    exceptionController::handleAdapterUnavailableException);
+            cfg.routes.exception(UnauthorizedException.class, exceptionController::handleUnauthorizedException);
+            cfg.routes.exception(APIReadOnlyException.class, exceptionController::handleAPIReadOnlyException);
+            cfg.routes.exception(UnsupportedOperationException.class,
+                    exceptionController::handleUnsupportedOperationException);
         });
-
-        javalin.exception(IllegalStateException.class, exceptionController::handleStateException);
-        javalin.exception(IllegalArgumentException.class, exceptionController::handleArgumentException);
-        javalin.exception(NotFoundException.class, exceptionController::handleNotFoundException);
-        javalin.exception(AdapterUnavailableException.class, exceptionController::handleAdapterUnavailableException);
-        javalin.exception(UnauthorizedException.class, exceptionController::handleUnauthorizedException);
-        javalin.exception(APIReadOnlyException.class, exceptionController::handleAPIReadOnlyException);
-        javalin.exception(UnsupportedOperationException.class,
-                exceptionController::handleUnsupportedOperationException);
     }
 
     public Logger getLogger() {
@@ -238,5 +246,6 @@ public class DVBServer {
         metadataController.schedule();
     }
 
-    private <E extends Exception> void handleUnsupportedOperationException(@NotNull E e1, @NotNull Context context2) {}
+    private <E extends Exception> void handleUnsupportedOperationException(@NotNull E e1, @NotNull Context context2) {
+    }
 }
